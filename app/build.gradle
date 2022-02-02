@@ -1,0 +1,73 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-kapt'
+}
+
+android {
+    compileSdk 31
+    buildToolsVersion "30.0.3"
+
+    defaultConfig {
+        applicationId "com.ratulsarna.musicplayer"
+        minSdk 21
+        targetSdk 31
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    buildFeatures {
+        dataBinding = true
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.core:core-ktx:1.7.0'
+    implementation "androidx.appcompat:appcompat:$appCompatVersion"
+    implementation "com.google.android.material:material:$materialVersion"
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
+    implementation "androidx.databinding:databinding-runtime:$dataBindingVersion"
+
+    implementation "com.jakewharton.timber:timber:$timberVersion"
+
+    // Dagger
+    implementation "com.google.dagger:dagger-android:$daggerVersion"
+    implementation "com.google.dagger:dagger-android-support:$daggerVersion"
+    kapt "com.google.dagger:dagger-compiler:$daggerVersion"
+    kapt "com.google.dagger:dagger-android-processor:$daggerVersion"
+
+    // RxJava
+    implementation "io.reactivex.rxjava3:rxandroid:$rxAndroidVersion"
+    implementation "com.jakewharton.rxbinding4:rxbinding:$rxBindingVersion"
+    implementation "com.jakewharton.rxbinding4:rxbinding-core:$rxBindingVersion"
+    implementation "com.jakewharton.rxbinding4:rxbinding-appcompat:$rxBindingVersion"
+    implementation "com.jakewharton.rxbinding4:rxbinding-material:$rxBindingVersion"
+    implementation "com.jakewharton.rxbinding4:rxbinding-recyclerview:$rxBindingVersion"
+    implementation "com.jakewharton.rxrelay3:rxrelay:$rxRelayVersion"
+
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation "androidx.arch.core:core-testing:$archTestCoreVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
+    androidTestImplementation "androidx.test:runner:$testRunnerVersion"
+    androidTestImplementation "androidx.test:rules:$testRulesVersion"
+    androidTestImplementation "androidx.arch.core:core-testing:$archTestCoreVersion"
+    androidTestImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
+}
