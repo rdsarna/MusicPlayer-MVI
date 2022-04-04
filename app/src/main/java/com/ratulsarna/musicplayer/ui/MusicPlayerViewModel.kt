@@ -35,22 +35,6 @@ class MusicPlayerViewModel @Inject constructor(
         0,1000, TimeUnit.MILLISECONDS, schedulerProvider.computation())
     private var oneSecondIntervalDisposable: Disposable? = null
 
-    private val waveFormEmitter: PublishSubject<ByteArray> = PublishSubject.create()
-    private var visualizer: Visualizer? = null
-    private val visualizerDataCaptureListener = object : Visualizer.OnDataCaptureListener {
-        override fun onWaveFormDataCapture(
-            visualizer: Visualizer?,
-            waveform: ByteArray?,
-            samplingRate: Int
-        ) {
-            if (waveform != null) waveFormEmitter.onNext(waveform)
-        }
-
-        override fun onFftDataCapture(visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int) {
-            // ignore
-        }
-    }
-
     val viewState: Observable<MusicPlayerViewState>
     val viewEffects: Observable<MusicPlayerEffect>
 
@@ -188,7 +172,7 @@ class MusicPlayerViewModel @Inject constructor(
                             null to loadSuccessful
                         }
                     }
-                    .withLatestFrom(viewState) { (duration, loadSuccessful), vs ->
+                    .zipWith(viewState) { (duration, loadSuccessful), vs ->
                         var playing = false
                         when {
                             vs.playing && vs.elapsedTime > 0 -> playing = mediaPlayerController.seekToAndStart(vs.elapsedTime)
@@ -224,11 +208,6 @@ private fun Observable<UiStopEvent>.onUiStop(): Observable<UiStopResult> =
         mediaPlayerController.pause()
         mediaPlayerController.release()
     }
-        .doOnNext {
-            visualizer?.enabled = false
-            visualizer?.release()
-            visualizer = null
-        }
         .map { UiStopResult }
     private fun Observable<PlayEvent>.onPlay(): Observable<PlayResult> =
         map { mediaPlayerController.start() }
