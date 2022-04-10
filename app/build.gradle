@@ -43,8 +43,15 @@ dependencies {
     implementation "com.google.android.material:material:$materialVersion"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
     implementation "androidx.databinding:databinding-runtime:$dataBindingVersion"
+
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion"
+    kapt "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion"
 
     implementation "com.jakewharton.timber:timber:$timberVersion"
 
@@ -53,15 +60,6 @@ dependencies {
     implementation "com.google.dagger:dagger-android-support:$daggerVersion"
     kapt "com.google.dagger:dagger-compiler:$daggerVersion"
     kapt "com.google.dagger:dagger-android-processor:$daggerVersion"
-
-    // RxJava
-    implementation "io.reactivex.rxjava3:rxandroid:$rxAndroidVersion"
-    implementation "com.jakewharton.rxbinding4:rxbinding:$rxBindingVersion"
-    implementation "com.jakewharton.rxbinding4:rxbinding-core:$rxBindingVersion"
-    implementation "com.jakewharton.rxbinding4:rxbinding-appcompat:$rxBindingVersion"
-    implementation "com.jakewharton.rxbinding4:rxbinding-material:$rxBindingVersion"
-    implementation "com.jakewharton.rxbinding4:rxbinding-recyclerview:$rxBindingVersion"
-    implementation "com.jakewharton.rxrelay3:rxrelay:$rxRelayVersion"
 
     testImplementation "junit:junit:$junitVersion"
     testImplementation "androidx.arch.core:core-testing:$archTestCoreVersion"
