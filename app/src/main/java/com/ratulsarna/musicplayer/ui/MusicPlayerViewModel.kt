@@ -1,22 +1,24 @@
 package com.ratulsarna.musicplayer.ui
 
-import android.media.audiofx.Visualizer
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.ratulsarna.musicplayer.repository.model.Song
 import com.ratulsarna.musicplayer.ui.MusicPlayerEffect.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerResult.*
 import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerController
 import com.ratulsarna.musicplayer.ui.controllers.UpNextSongsController
-import com.ratulsarna.musicplayer.ui.model.LoadSongResult
 import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
+import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
-import com.ratulsarna.musicplayer.utils.SchedulerProvider
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.subjects.PublishSubject
+import com.ratulsarna.musicplayer.utils.interval
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -24,95 +26,81 @@ import javax.inject.Inject
 class MusicPlayerViewModel @Inject constructor(
     private val upNextSongsController: UpNextSongsController,
     private val mediaPlayerController: MediaPlayerController,
-    private val schedulerProvider: SchedulerProvider,
+    private val coroutineContextProvider: CoroutineContextProvider
 ) : ViewModel() {
 
-    private val eventEmitter: PublishSubject<MusicPlayerEvent> = PublishSubject.create()
+    private var oneSecondIntervalJob: Job? = null
+    private val _eventFlow = MutableSharedFlow<MusicPlayerEvent>()
+    private val viewEffectChannel = Channel<MusicPlayerEffect>(Channel.BUFFERED)
 
-    private lateinit var disposable: Disposable
-
-    private val oneSecondIntervalEmitter = Observable.interval(
-        0,1000, TimeUnit.MILLISECONDS, schedulerProvider.computation())
-    private var oneSecondIntervalDisposable: Disposable? = null
-
-    private val waveFormEmitter: PublishSubject<ByteArray> = PublishSubject.create()
-    private var visualizer: Visualizer? = null
-    private val visualizerDataCaptureListener = object : Visualizer.OnDataCaptureListener {
-        override fun onWaveFormDataCapture(
-            visualizer: Visualizer?,
-            waveform: ByteArray?,
-            samplingRate: Int
-        ) {
-            if (waveform != null) waveFormEmitter.onNext(waveform)
-        }
-
-        override fun onFftDataCapture(visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int) {
-            // ignore
-        }
-    }
-
-    val viewState: Observable<MusicPlayerViewState>
-    val viewEffects: Observable<MusicPlayerEffect>
+    val viewState: StateFlow<MusicPlayerViewState>
+    val viewEffects: Flow<MusicPlayerEffect> = viewEffectChannel.receiveAsFlow()
 
     init {
-        mediaPlayerController.init({
-            oneSecondIntervalDisposable = oneSecondIntervalEmitter.map {
-                mediaPlayerController.getCurrentPosition()
-            }.subscribe {
-                processInput(CurrentPositionEvent(it))
-            }
-        }, {
-            oneSecondIntervalDisposable?.dispose()
-        }) { processInput(SongCompletedEvent) }
-        eventEmitter
-            .doOnNext { Timber.d("----- event $it") }
+        val initialVS = MusicPlayerViewState.INITIAL
+        viewState = _eventFlow
             .eventToResult()
-            .doOnNext { Timber.d("----- result $it") }
-            .share()
-            .also { result ->
-                viewState = result
-                    .resultToViewState()
-                    .doOnNext { Timber.d("----- vs $it") }
-                    .replay(1)
-                    .autoConnect(1) { disposable = it }
-
-                viewEffects = result
-                    .resultToViewEffect()
-                    .doOnNext { Timber.d("----- ve $it") }
+            .onEach { Timber.d("Result = $it") }
+            .resultToViewEffect()
+            .resultToViewState()
+            .onEach { Timber.d("ViewState = $it") }
+            .catch {
+                it.printStackTrace()
+                Timber.e(it, "Something has gone horribly wrong")
             }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                initialVS
+            )
+
+        mediaPlayerController.init(
+            startedListener = {
+                oneSecondIntervalJob = interval(1000, TimeUnit.MILLISECONDS).map {
+                    mediaPlayerController.getCurrentPosition()
+                }.onEach {
+                    processInput(CurrentPositionEvent(it))
+                }.launchIn(viewModelScope)
+            },
+            pausedStoppedListener = {
+                oneSecondIntervalJob?.cancel()
+            },
+            songCompletedListener = {
+                viewModelScope.launch {
+                    processInput(SongCompletedEvent)
+                }
+            }
+        )
     }
 
     override fun onCleared() {
-        disposable.dispose()
-        oneSecondIntervalDisposable?.dispose()
+        oneSecondIntervalJob?.cancel()
         super.onCleared()
     }
 
-    fun processInput(event: MusicPlayerEvent) {
-        eventEmitter.onNext(event)
+    suspend fun processInput(event: MusicPlayerEvent) {
+        _eventFlow.emit(event)
     }
 
-    private fun Observable<MusicPlayerEvent>.eventToResult(): Observable<MusicPlayerResult> {
-        return publish { o -> Observable.merge(
-            listOf(
-                o.ofType(UiCreateEvent::class.java).onUiCreate(),
-                o.ofType(UiStartEvent::class.java).onUiStart(),
-                o.ofType(UiStopEvent::class.java).onUiStop(),
-                o.ofType(PlayEvent::class.java).onPlay(),
-                o.ofType(PauseEvent::class.java).onPause(),
-                o.ofType(NextSongEvent::class.java).onNextSong(),
-                o.ofType(PreviousSongEvent::class.java).onPreviousSong(),
-                o.ofType(SeekForwardEvent::class.java).onSeekForward(),
-                o.ofType(SeekBackwardEvent::class.java).onSeekBackward(),
-                o.ofType(SeekToEvent::class.java).onSeekTo(),
-                o.ofType(SongCompletedEvent::class.java).onSongCompleted(),
-                o.ofType(CurrentPositionEvent::class.java).onCurrentPosition(),
-                o.ofType(NewSongEvent::class.java).onNewSong(),
-            ))
-        }
+    private fun Flow<MusicPlayerEvent>.eventToResult(): Flow<MusicPlayerResult> {
+        return merge(
+            onUiCreate(filterIsInstance()),
+            onUiStart(filterIsInstance()),
+            onUiStop(filterIsInstance()),
+            onPlay(filterIsInstance()),
+            onPause(filterIsInstance()),
+            onNextSong(filterIsInstance()),
+            onPreviousSong(filterIsInstance()),
+            onSeekForward(filterIsInstance()),
+            onSeekBackward(filterIsInstance()),
+            onSeekTo(filterIsInstance()),
+            onSongCompleted(filterIsInstance()),
+            onCurrentPosition(filterIsInstance()),
+            onNewSong(filterIsInstance()),
+        )
     }
 
-    private fun Observable<MusicPlayerResult>.resultToViewState(): Observable<MusicPlayerViewState> {
+    private fun Flow<MusicPlayerResult>.resultToViewState(): Flow<MusicPlayerViewState> {
         return scan(MusicPlayerViewState.INITIAL) { vs, result ->
             when (result) {
                 is UiCreateResult -> vs.copy(upNextSongs = result.upNextSongList)
@@ -150,9 +138,9 @@ class MusicPlayerViewModel @Inject constructor(
             .distinctUntilChanged()
     }
 
-    private fun Observable<MusicPlayerResult>.resultToViewEffect(): Observable<MusicPlayerEffect> {
-        return withLatestFrom(viewState) { result, vs ->
-            when (result) {
+    private fun Flow<MusicPlayerResult>.resultToViewEffect(): Flow<MusicPlayerResult> {
+        return onEach { result ->
+            val effect = when (result) {
                 is PlayResult -> ForceScreenOnEffect(true)
                 is PauseResult -> ForceScreenOnEffect(false)
                 is UiStartResult -> when {
@@ -161,155 +149,158 @@ class MusicPlayerViewModel @Inject constructor(
                 }
                 is NewSongResult -> when {
                     result.errorLoading -> ShowErrorEffect("Error loading song. Try next song.")
-                    vs.playing -> ForceScreenOnEffect(true)
+                    viewState.value.playing -> ForceScreenOnEffect(true)
                     else -> NoOpEffect
                 }
                 else -> NoOpEffect
             }
+            Timber.d("SideEffect = $effect")
+            viewEffectChannel.send(effect)
         }
     }
 
     private val upNextSongList: List<PlaylistViewSong>
         get() = upNextSongsController.currentUpNextSongList().map { it.toPlaylistViewSong() }
 
-    private fun Observable<UiCreateEvent>.onUiCreate(): Observable<UiCreateResult> =
-        map { UiCreateResult(upNextSongsController.loadDefaultPlaylistSongs()
-                    .map { it.toPlaylistViewSong() }) }
-
-    private fun Observable<UiStartEvent>.onUiStart(): Observable<UiStartResult> =
-        map { upNextSongsController.currentSong() }
-            .switchMap {
-                Observable.fromCallable { mediaPlayerController.loadNewSong(it) }
-                    .subscribeOn(schedulerProvider.io())
-                    .map { loadSuccessful ->
-                        if (loadSuccessful) {
-                            mediaPlayerController.getDuration() to loadSuccessful
-                        } else {
-                            null to loadSuccessful
-                        }
-                    }
-                    .withLatestFrom(viewState) { (duration, loadSuccessful), vs ->
-                        var playing = false
-                        when {
-                            vs.playing && vs.elapsedTime > 0 -> playing = mediaPlayerController.seekToAndStart(vs.elapsedTime)
-                            vs.elapsedTime > 0 -> mediaPlayerController.seekTo(vs.elapsedTime)
-                            vs.playing -> playing = mediaPlayerController.start()
-                        }
-                        LoadSongResult(duration, loadSuccessful, playing)
-                    }
-                    .map { loadSongResult ->
-                        UiStartResult(
-                            upNextSongsController.currentSong(),
-                            upNextSongsController.peekNextSong(),
-                            (loadSongResult.duration ?: 1),
-                            playing = loadSongResult.playing,
-                            errorLoadingSong = !loadSongResult.loadSuccessful,
-                        )
-                    }
-                    .startWithItem(
-                        UiStartResult(
-                            upNextSongsController.currentSong(),
-                            upNextSongsController.peekNextSong(),
-                            1,
-                            playing = null,
-                            errorLoadingSong = false,
-                        )
-                    )
-            }
-private fun Observable<UiStopEvent>.onUiStop(): Observable<UiStopResult> =
-    map {
-        // Important note: We are pausing here (if player is playing) to stop playback
-        // immediately but this pause is not propagated to the Ui because we want to
-        // continue playback on the next UiStartEvent
-        mediaPlayerController.pause()
-        mediaPlayerController.release()
-    }
-        .doOnNext {
-            visualizer?.enabled = false
-            visualizer?.release()
-            visualizer = null
+    private fun onUiCreate(flow: Flow<UiCreateEvent>): Flow<UiCreateResult> =
+        flow.map {
+            UiCreateResult(
+                upNextSongsController.loadDefaultPlaylistSongs()
+                    .map { it.toPlaylistViewSong() }
+            )
         }
-        .map { UiStopResult }
-    private fun Observable<PlayEvent>.onPlay(): Observable<PlayResult> =
-        map { mediaPlayerController.start() }
-            .map { PlayResult(it) }
-    private fun Observable<PauseEvent>.onPause(): Observable<PauseResult> =
-        map { mediaPlayerController.pause() }
-            .map { PauseResult(!it) }
 
-    private fun Observable<NextSongEvent>.onNextSong(): Observable<NewSongResult> =
-        map {
+    private fun onUiStart(flow: Flow<UiStartEvent>): Flow<UiStartResult> =
+        flow.map { upNextSongsController.currentSong() }
+            .transformLatest {
+                emit(
+                    UiStartResult(
+                        upNextSongsController.currentSong(),
+                        upNextSongsController.peekNextSong(),
+                        1,
+                        playing = null,
+                        errorLoadingSong = false,
+                    )
+                )
+                val loadSuccess = withContext(coroutineContextProvider.io) {
+                    mediaPlayerController.loadNewSong(upNextSongsController.currentSong())
+                }
+                val duration = if (loadSuccess) mediaPlayerController.getDuration() else MINIMUM_DURATION
+                val currentViewState = viewState.value
+                var playing = false
+                when {
+                    currentViewState.playing && currentViewState.elapsedTime > 0 -> {
+                        playing = mediaPlayerController.seekToAndStart(currentViewState.elapsedTime)
+                    }
+                    currentViewState.elapsedTime > 0 -> {
+                        mediaPlayerController.seekTo(currentViewState.elapsedTime)
+                    }
+                    currentViewState.playing -> {
+                        playing = mediaPlayerController.start()
+                    }
+                }
+                emit(
+                    UiStartResult(
+                        upNextSongsController.currentSong(),
+                        upNextSongsController.peekNextSong(),
+                        duration,
+                        playing = playing,
+                        errorLoadingSong = !loadSuccess,
+                    )
+                )
+            }
+    private fun onUiStop(flow: Flow<UiStopEvent>): Flow<UiStopResult> =
+        flow.map {
+            // Important note: We are pausing here (if player is playing) to stop playback
+            // immediately but this pause is not propagated to the Ui because we want to
+            // continue playback on the next UiStartEvent
+            mediaPlayerController.pause()
+            mediaPlayerController.release()
+            UiStopResult
+        }
+    private fun onPlay(flow: Flow<PlayEvent>): Flow<PlayResult> =
+        flow.map {
+            PlayResult(mediaPlayerController.start())
+        }
+    private fun onPause(flow: Flow<PauseEvent>): Flow<PauseResult> =
+        flow.map {
+            PauseResult(mediaPlayerController.pause().not())
+        }
+
+    private fun onNextSong(flow: Flow<NextSongEvent>): Flow<NewSongResult> =
+        flow.map {
             upNextSongsController.nextSong()
         }.newSongResultFromSong()
 
-    private fun Observable<PreviousSongEvent>.onPreviousSong(): Observable<NewSongResult> =
-        map {
+    private fun onPreviousSong(flow: Flow<PreviousSongEvent>): Flow<NewSongResult> =
+        flow.map {
             upNextSongsController.previousSong()
         }.newSongResultFromSong()
 
-    private fun Observable<SeekForwardEvent>.onSeekForward(): Observable<SeekToResult> =
-        map { mediaPlayerController.seekBy(SEEK_DURATION) }
-            .map { SeekToResult(it) }
-    private fun Observable<SeekBackwardEvent>.onSeekBackward(): Observable<SeekToResult> =
-        map { mediaPlayerController.seekBy(-SEEK_DURATION) }
-            .map { SeekToResult(it) }
-    private fun Observable<SeekToEvent>.onSeekTo(): Observable<SeekToResult> =
-        map { mediaPlayerController.seekTo(it.position) }
-            .map { SeekToResult(it) }
+    private fun onSeekForward(flow: Flow<SeekForwardEvent>): Flow<SeekToResult> =
+       flow.map {
+           SeekToResult(
+               mediaPlayerController.seekBy(SEEK_DURATION)
+           )
+       }
+    private fun onSeekBackward(flow: Flow<SeekBackwardEvent>): Flow<SeekToResult> =
+        flow.map {
+            SeekToResult(
+                mediaPlayerController.seekBy(-SEEK_DURATION)
+            )
+        }
+    private fun onSeekTo(flow: Flow<SeekToEvent>): Flow<SeekToResult> =
+        flow.map {
+            SeekToResult(
+                mediaPlayerController.seekTo(it.position)
+            )
+        }
 
-    private fun Observable<SongCompletedEvent>.onSongCompleted(): Observable<NewSongResult> =
-        map {
+    private fun onSongCompleted(flow: Flow<SongCompletedEvent>): Flow<NewSongResult> =
+        flow.map {
             upNextSongsController.nextSong()
         }.newSongResultFromSong()
 
-    private fun Observable<CurrentPositionEvent>.onCurrentPosition(): Observable<CurrentPositionResult> =
-        map { CurrentPositionResult(it.position) }
+    private fun onCurrentPosition(flow: Flow<CurrentPositionEvent>): Flow<CurrentPositionResult> =
+        flow.map { CurrentPositionResult(it.position) }
 
-    private fun Observable<NewSongEvent>.onNewSong(): Observable<NewSongResult> =
-        map {
+    private fun onNewSong(flow: Flow<NewSongEvent>): Flow<NewSongResult> =
+        flow.map {
             upNextSongsController.newSong(it.songId)
         }.newSongResultFromSong()
 
-    private fun Observable<Song?>.newSongResultFromSong(): Observable<NewSongResult> =
-        switchMap { song ->
-            Observable.fromCallable {
-                mediaPlayerController.loadNewSong(song)
-            }
-                .subscribeOn(schedulerProvider.io())
-                .doOnNext { loadSuccessful ->
-                    if (!loadSuccessful) mediaPlayerController.release()
-                }
-                .map { loadSuccessful ->
-                    if (loadSuccessful) {
-                        mediaPlayerController.getDuration() to loadSuccessful
-                    } else {
-                        null to loadSuccessful
-                    }
-                }
-                .map { (duration, loadSuccessful) ->
-                    val playing = mediaPlayerController.start()
-                    LoadSongResult(duration, loadSuccessful, playing)
-                }
-                .map { loadSongResult ->
-                    NewSongResult(
-                        song,
-                        upNextSongsController.peekNextSong(),
-                        loadSongResult?.duration ?: MINIMUM_DURATION,
-                        upNextSongList,
-                        playing = loadSongResult.playing,
-                        errorLoading = !loadSongResult.loadSuccessful
-                    )
-                }
-                .startWithItem(
-                    NewSongResult(
-                        song,
-                        upNextSongsController.peekNextSong(),
-                        -1,
-                        upNextSongList,
-                        playing = false,
-                        errorLoading = false,
-                    )
+    private fun Flow<Song?>.newSongResultFromSong(): Flow<NewSongResult> =
+        transformLatest { song ->
+            emit(
+                NewSongResult(
+                    song,
+                    upNextSongsController.peekNextSong(),
+                    -1,
+                    upNextSongList,
+                    playing = false,
+                    errorLoading = false,
                 )
+            )
+            val loadSuccess = withContext(coroutineContextProvider.io) {
+                val loadSuccess = mediaPlayerController.loadNewSong(song)
+                if (!loadSuccess) mediaPlayerController.release()
+                return@withContext loadSuccess
+            }
+            val (duration, playing) = if (loadSuccess) {
+                mediaPlayerController.getDuration() to mediaPlayerController.start()
+            } else {
+                MINIMUM_DURATION to false
+            }
+            emit(
+                NewSongResult(
+                    song,
+                    upNextSongsController.peekNextSong(),
+                    duration,
+                    upNextSongList,
+                    playing = playing,
+                    errorLoading = !loadSuccess
+                )
+            )
         }
 
     companion object {

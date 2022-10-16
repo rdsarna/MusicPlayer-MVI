@@ -13,28 +13,24 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
 import com.google.android.material.slider.Slider
-import com.jakewharton.rxbinding4.view.clicks
 import com.ratulsarna.musicplayer.databinding.ActivityMusicPlayerBinding
 import com.ratulsarna.musicplayer.ui.MusicPlayerEffect.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
 import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
+import com.ratulsarna.musicplayer.utils.clicks
 import com.ratulsarna.musicplayer.utils.updateValueIfNew
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.disposables.CompositeDisposable
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.subjects.PublishSubject
-import timber.log.Timber
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -46,9 +42,6 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
     lateinit var viewModelFactory: ViewModelProvider.Factory
 
     private lateinit var binding: ActivityMusicPlayerBinding
-
-    private var uiDisposable: Disposable? = null
-    private var disposables: CompositeDisposable = CompositeDisposable()
 
     private val viewModel: MusicPlayerViewModel by lazy {
         viewModelProvider(viewModelFactory)
@@ -70,7 +63,7 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
         _totalDurationLabel, _elapsedTimeLabel, _nextSongLabel, _upNextSongsList,
     )
 
-    private val nextSongIdClick: PublishSubject<Int> = PublishSubject.create()
+    private val eventChannel = Channel<MusicPlayerEvent>(Channel.BUFFERED)
 
     private var basePeekHeight: Int = 0
 
@@ -131,79 +124,53 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
             }
         }
 
-        disposables.add(
-            viewModel
-                .viewState
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnNext { Timber.d("----- onNext VS $it") }
-                .subscribe(::render) {
-                    Timber.w(it, "something went terribly wrong processing view state")
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.viewState.collect {
+                    render(it)
                 }
-        )
+            }
+        }
 
-        disposables.add(
-            viewModel
-                .viewEffects
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(::trigger) {
-                    Timber.w(it, "something went terribly wrong processing view effects")
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.viewEffects.collect {
+                    trigger(it)
                 }
-        )
+            }
+        }
 
-        viewModel.processInput(UiCreateEvent)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                events()
+                    .collect {
+                        viewModel.processInput(it)
+                    }
+            }
+        }
+
+        eventChannel.trySend(UiCreateEvent)
     }
 
     private fun setupPlaylist(playlistRecyclerView: RecyclerView) {
         playlistRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MusicPlayerActivity,
                 LinearLayoutManager.VERTICAL, false)
-            adapter = PlaylistAdapter { nextSongIdClick.onNext(it) }
+            adapter = PlaylistAdapter { eventChannel.trySend(NewSongEvent(it)) }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        disposables.clear()
     }
 
     override fun onStart() {
         super.onStart()
-
-        binding.apply {
-            val uiStartEvents = Observable.just(UiStartEvent)
-            val playEvents = playButton.clicks().map { PlayEvent }
-            val pauseEvents = pauseButton.clicks().map { PauseEvent }
-            val seekForwardEvents = seekForwardButton.clicks().map { SeekForwardEvent }
-            val seekBackwardEvents = seekBackwardButton.clicks().map { SeekBackwardEvent }
-            val nextSongEvents = nextButton.clicks().map { NextSongEvent }
-            val previousSongEvents = previousButton.clicks().map { PreviousSongEvent }
-            val newSongEvents: Observable<NewSongEvent> = nextSongIdClick.map { NewSongEvent(it) }
-
-            uiDisposable =
-                Observable.merge(listOf(
-                    uiStartEvents,
-                    playEvents,
-                    pauseEvents,
-                    seekForwardEvents,
-                    seekBackwardEvents,
-                    nextSongEvents,
-                    previousSongEvents,
-                    newSongEvents,
-                )).subscribe(
-                    { viewModel.processInput(it) },
-                    { Timber.e(it, "error processing input ") }
-                )
-
-            seekBar.addOnChangeListener(Slider.OnChangeListener { _, value, fromUser ->
-                if (fromUser) viewModel.processInput(SeekToEvent(value.roundToInt()))
-            })
-        }
+        eventChannel.trySend(UiStartEvent)
+        binding.seekBar.addOnChangeListener(Slider.OnChangeListener { _, value, fromUser ->
+            if (fromUser) eventChannel.trySend(SeekToEvent(value.roundToInt()))
+        })
     }
 
     override fun onStop() {
         super.onStop()
-        viewModel.processInput(UiStopEvent)
-        uiDisposable?.dispose()
+        eventChannel.trySend(UiStopEvent)
     }
 
     override fun onBackPressed() {
@@ -214,6 +181,27 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
             }
         }
         super.onBackPressed()
+    }
+
+    private fun events(): Flow<MusicPlayerEvent> {
+        binding.apply {
+            val playEvents = playButton.clicks().map { PlayEvent }
+            val pauseEvents = pauseButton.clicks().map { PauseEvent }
+            val seekForwardEvents = seekForwardButton.clicks().map { SeekForwardEvent }
+            val seekBackwardEvents = seekBackwardButton.clicks().map { SeekBackwardEvent }
+            val nextSongEvents = nextButton.clicks().map { NextSongEvent }
+            val previousSongEvents = previousButton.clicks().map { PreviousSongEvent }
+
+            return merge(
+                playEvents,
+                pauseEvents,
+                seekForwardEvents,
+                seekBackwardEvents,
+                nextSongEvents,
+                previousSongEvents,
+                eventChannel.receiveAsFlow(),
+            )
+        }
     }
 
     private fun trigger(effect: MusicPlayerEffect) {

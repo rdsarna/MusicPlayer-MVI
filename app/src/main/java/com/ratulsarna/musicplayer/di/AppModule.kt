@@ -8,8 +8,8 @@ import com.ratulsarna.musicplayer.repository.SongsRepository
 import com.ratulsarna.musicplayer.repository.SongsRepositoryDefault
 import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerController
 import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerControllerDefault
-import com.ratulsarna.musicplayer.utils.SchedulerProvider
-import com.ratulsarna.musicplayer.utils.SchedulerProviderDefault
+import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
+import com.ratulsarna.musicplayer.utils.CoroutineContextProviderDefault
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
@@ -33,5 +33,5 @@ class AppModule {
 
     @Singleton
     @Provides
-    fun provideSchedulerProvider(impl: SchedulerProviderDefault): SchedulerProvider = impl
+    fun provideCoroutineContextProvider(impl: CoroutineContextProviderDefault): CoroutineContextProvider = impl
 }
