@@ -14,7 +14,7 @@ buildscript {
         dataBindingVersion = "7.3.0"
         junitVersion = '4.13.2'
         lifecycleVersion = "2.5.1"
-        materialVersion = "1.6.1"
+        materialVersion = "1.7.0"
         recyclerViewVersion = '1.2.0'
         rxAndroidVersion='3.0.0'
         rxBindingVersion='4.0.0'
@@ -31,7 +31,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.0'
+        classpath 'com.android.tools.build:gradle:7.3.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
 
         // NOTE: Do not place your application dependencies here; they belong
