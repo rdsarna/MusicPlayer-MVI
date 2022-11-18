@@ -70,12 +70,12 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityMusicPlayerBinding.inflate(layoutInflater).apply {
             lifecycleOwner = this@MusicPlayerActivity
             viewState = viewBindingState
         }
         setContentView(binding.root)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         binding.apply {
             setPlaylistViewsAlpha(0f)

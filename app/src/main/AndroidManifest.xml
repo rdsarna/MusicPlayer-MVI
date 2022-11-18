@@ -13,12 +13,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MusicPlayer">
         <activity
-            android:name=".ComposeActivity"
+            android:name=".ui.ComposeActivity"
             android:exported="false"
             android:label="@string/title_activity_compose"
             android:theme="@style/Theme.MusicPlayer" />
         <activity
-            android:name=".MusicPlayerActivity"
+            android:name=".ui.MusicPlayerActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
