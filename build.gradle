@@ -21,8 +21,8 @@ buildscript {
         rxJavaVersion='3.0.12'
         rxRelayVersion='3.0.0'
         testCoreVersion = '1.2.0'
-        testRunnerVersion = '1.4.0'
-        testRulesVersion = '1.4.0'
+        testRunnerVersion = '1.5.1'
+        testRulesVersion = '1.5.0'
         timberVersion = "4.7.1"
     }
 

@@ -10,6 +10,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
@@ -69,6 +70,7 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityMusicPlayerBinding.inflate(layoutInflater).apply {
             lifecycleOwner = this@MusicPlayerActivity
             viewState = viewBindingState
@@ -110,17 +112,14 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
             setupPlaylist(playlistView.playlistRecyclerView)
 
             // Setup insets to avoid issues when switching between gesture and button navigation
-            window.decorView.setOnApplyWindowInsetsListener { view, insets ->
-                val relevantInsets = screenInsets(insets)
+            ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, insets ->
+                val relevantInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars()).let {
+                    Rect(it.left, it.top, it.right, it.bottom)
+                }
                 parentView.updatePadding(top = relevantInsets.top, bottom = relevantInsets.bottom)
                 playlistView.playlistParent.updatePadding(bottom = relevantInsets.bottom)
                 bottomSheetBehavior.peekHeight = basePeekHeight + relevantInsets.bottom
-                view.onApplyWindowInsets(insets)
-            }
-            ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
-                WindowInsetsCompat.Builder()
-                    .setSystemWindowInsets(insets.systemWindowInsets)
-                    .setSystemGestureInsets(insets.systemGestureInsets).build()
+                WindowInsetsCompat.CONSUMED
             }
         }
 
@@ -279,10 +278,9 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
     @Suppress("DEPRECATION")
     private fun screenInsets(preRInsets: WindowInsets): Rect =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            windowManager.currentWindowMetrics.windowInsets
-                .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()).let {
-                    Rect(it.left, it.top, it.right, it.bottom)
-                }
+            preRInsets.getInsets(WindowInsetsCompat.Type.systemBars()).let {
+                Rect(it.left, it.top, it.right, it.bottom)
+            }
         } else {
             preRInsets.let {
                 Rect(it.systemWindowInsetLeft, it.systemWindowInsetTop,
