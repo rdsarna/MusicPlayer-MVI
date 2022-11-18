@@ -12,9 +12,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MusicPlayer">
-
         <activity
-            android:name="com.ratulsarna.musicplayer.ui.MusicPlayerActivity"
+            android:name=".ComposeActivity"
+            android:exported="false"
+            android:label="@string/title_activity_compose"
+            android:theme="@style/Theme.MusicPlayer" />
+        <activity
+            android:name=".MusicPlayerActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
