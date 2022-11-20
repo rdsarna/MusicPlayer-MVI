@@ -157,6 +157,7 @@ fun SongTitle(title: String, subTitle: String, modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongSeekBar(
     modifier: Modifier = Modifier,
@@ -182,17 +183,22 @@ fun SongSeekBar(
                 .align(Alignment.TopEnd)
         )
         Slider(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(top = 8.dp),
             value = sliderValue,
             onValueChange = onSliderValueChange,
             valueRange = 0f..totalDuration,
             colors = SliderDefaults.colors(
-                thumbColor = Color.White
+                thumbColor = Color.Transparent,
+                inactiveTrackColor = Color(0x82FFFFFF),
+                activeTrackColor = Color.White,
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent,
             ),
-            modifier = Modifier
-                .padding(
-                    horizontal = 16.dp,
-                )
-                .padding(top = 8.dp)
+            thumb = {
+
+            }
         )
     }
 }
