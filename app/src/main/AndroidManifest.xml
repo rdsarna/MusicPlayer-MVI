@@ -14,9 +14,11 @@
         android:theme="@style/Theme.MusicPlayer">
         <activity
             android:name=".ui.ComposeActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_compose"
-            android:theme="@style/Theme.MusicPlayer" />
+            android:theme="@style/Theme.MusicPlayer">
+
+        </activity>
         <activity
             android:name=".ui.MusicPlayerActivity"
             android:exported="true"
