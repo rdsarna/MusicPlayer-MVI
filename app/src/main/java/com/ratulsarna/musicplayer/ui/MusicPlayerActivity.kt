@@ -287,10 +287,4 @@ class MusicPlayerActivity : DaggerAppCompatActivity() {
                     it.systemWindowInsetRight, it.systemWindowInsetBottom)
             }
         }
-
-    private fun Int.getTimeLabel(): String {
-        val minutes = this / (1000 * 60)
-        val seconds = this / 1000 % 60
-        return "$minutes:${if (seconds < 10) "0$seconds" else seconds}"
-    }
 }

@@ -5,6 +5,14 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        release {
+            storeFile file('C:\\Developer\\Personal\\Projects\\MusicPlayerKeyStore\\keystore.jks')
+            storePassword 'musicplayer'
+            keyAlias 'key0'
+            keyPassword 'musicplayer'
+        }
+    }
     compileSdk 33
     buildToolsVersion "30.0.3"
 

@@ -39,6 +39,7 @@ class MusicPlayerViewModel @Inject constructor(
     init {
         val initialVS = MusicPlayerViewState.INITIAL
         viewState = _eventFlow
+            .onEach { Timber.d("Event = $it") }
             .eventToResult()
             .onEach { Timber.d("Result = $it") }
             .resultToViewEffect()
@@ -79,6 +80,7 @@ class MusicPlayerViewModel @Inject constructor(
     }
 
     suspend fun processInput(event: MusicPlayerEvent) {
+        Timber.d("-----------here2")
         _eventFlow.emit(event)
     }
 
@@ -115,20 +117,26 @@ class MusicPlayerViewModel @Inject constructor(
                         nextSongLabel = "Up Next: ${result.nextSong?.title}",
                     )
                 } ?: vs
-                is NewSongResult -> result.song?.let { song ->
-                    vs.copy(
-                        loading = false,
-                        songTitle = song.title,
-                        songInfoLabel = "${song.artistName} | ${song.year}",
-                        albumArt = song.albumArtResId,
-                        nextSongLabel = "Up Next: ${result.nextSong?.title}",
-                        elapsedTime = 0,
-                        totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
-                        playing = result.playing,
-                        upNextSongs = result.upNextSongList
-                    )
-                } ?: vs
-                is SeekToResult -> vs.copy(elapsedTime = result.position)
+                is NewSongResult -> {
+                    Timber.d("-----------here4")
+                    result.song?.let { song ->
+                        vs.copy(
+                            loading = false,
+                            songTitle = song.title,
+                            songInfoLabel = "${song.artistName} | ${song.year}",
+                            albumArt = song.albumArtResId,
+                            nextSongLabel = "Up Next: ${result.nextSong?.title}",
+                            elapsedTime = 0,
+                            totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
+                            playing = result.playing,
+                            upNextSongs = result.upNextSongList
+                        )
+                    } ?: vs
+                }
+                is SeekToResult -> {
+                    Timber.d("-----------here5")
+                    vs.copy(elapsedTime = result.position)
+                }
                 UiStopResult -> vs
                 is PauseResult -> vs.copy(playing = result.playing)
                 is PlayResult -> vs.copy(playing = result.playing)
@@ -229,6 +237,7 @@ class MusicPlayerViewModel @Inject constructor(
 
     private fun onNextSong(flow: Flow<NextSongEvent>): Flow<NewSongResult> =
         flow.map {
+            Timber.d("-----------here3-2")
             upNextSongsController.nextSong()
         }.newSongResultFromSong()
 
@@ -251,6 +260,7 @@ class MusicPlayerViewModel @Inject constructor(
         }
     private fun onSeekTo(flow: Flow<SeekToEvent>): Flow<SeekToResult> =
         flow.map {
+            Timber.d("-----------here3")
             SeekToResult(
                 mediaPlayerController.seekTo(it.position)
             )

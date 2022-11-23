@@ -2,6 +2,7 @@ package com.ratulsarna.musicplayer.di
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.ratulsarna.musicplayer.ui.ComposeActivity
 import com.ratulsarna.musicplayer.ui.MusicPlayerActivity
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewModel
 import dagger.Binds
@@ -18,6 +19,10 @@ abstract class UiBindingModule {
     @ActivityScoped
     @ContributesAndroidInjector
     abstract fun musicPlayerActivity(): MusicPlayerActivity
+
+    @ActivityScoped
+    @ContributesAndroidInjector
+    abstract fun composeActivity(): ComposeActivity
 
     @Binds
     @IntoMap
