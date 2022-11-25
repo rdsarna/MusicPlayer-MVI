@@ -29,6 +29,13 @@
             android:screenOrientation="portrait">
 
         </activity>
+        <activity
+            android:name=".ui.test.TestComposeActivity"
+            android:exported="true"
+            android:label="@string/title_activity_compose"
+            android:theme="@style/Theme.MusicPlayer">
+
+        </activity>
     </application>
 
 </manifest>
