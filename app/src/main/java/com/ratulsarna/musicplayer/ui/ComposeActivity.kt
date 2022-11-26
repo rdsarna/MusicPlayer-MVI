@@ -1,7 +1,9 @@
 package com.ratulsarna.musicplayer.ui
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -15,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Devices
@@ -33,7 +36,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
-import timber.log.Timber
 import javax.inject.Inject
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -69,6 +71,7 @@ fun MusicPlayerScreen(
     viewModel: MusicPlayerViewModel,
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
+    // ViewState
     val stateFlowLifecycleAware =
         remember(
             viewModel.viewState,
@@ -81,28 +84,80 @@ fun MusicPlayerScreen(
         }
     val musicPlayerViewState by stateFlowLifecycleAware.collectAsState(viewModel.viewState.value)
 
-    val eventChannel = remember { Channel<MusicPlayerEvent>(Channel.BUFFERED) }
-    val eventFlowLifecycleAware =
+    // ViewEvents
+    val eventChannel = setupEventChannel(
+        lifecycleOwner,
+        viewModel
+    )
+
+    // ViewEffects
+    ViewEffects(
+        lifecycleOwner,
+        viewModel,
+    )
+
+    LifecycleEvents(
+        viewModel,
+        lifecycleOwner,
+        eventChannel
+    )
+
+    MusicPlayerScreenContent(
+        modifier = modifier
+            .fillMaxSize(),
+        state = musicPlayerViewState,
+        sendUiEvent = {
+            eventChannel.trySend(it)
+        }
+    )
+}
+
+@Composable
+private fun ViewEffects(
+    lifecycleOwner: LifecycleOwner,
+    viewModel: MusicPlayerViewModel,
+) {
+    val context = LocalContext.current
+    val effectFlowLifecycleAware =
         remember(
-            eventChannel,
+            viewModel.viewEffects,
             lifecycleOwner
         ) {
-            eventChannel.receiveAsFlow()
+            viewModel.viewEffects
                 .flowWithLifecycle(
                     lifecycleOwner.lifecycle,
                     Lifecycle.State.STARTED
                 )
         }
     LaunchedEffect(
-        key1 = eventChannel,
+        key1 = viewModel.viewEffects,
         key2 = lifecycleOwner,
     ) {
-        eventFlowLifecycleAware.onEach {
-            viewModel.processInput(it)
+        effectFlowLifecycleAware.collect { effect ->
+            when (effect) {
+                is MusicPlayerEffect.ShowErrorEffect -> {
+                    Toast.makeText(
+                        context,
+                        effect.errorMessage,
+                        Toast.LENGTH_LONG
+                    )
+                        .show()
+                }
+                is MusicPlayerEffect.ForceScreenOnEffect,
+                MusicPlayerEffect.NoOpEffect -> {
+                    // ignore
+                }
+            }
         }
-            .collect()
     }
+}
 
+@Composable
+private fun LifecycleEvents(
+    viewModel: MusicPlayerViewModel,
+    lifecycleOwner: LifecycleOwner,
+    eventChannel: Channel<MusicPlayerEvent>
+) {
     LaunchedEffect(true) {
         viewModel.processInput(MusicPlayerEvent.UiCreateEvent)
     }
@@ -124,15 +179,35 @@ fun MusicPlayerScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    MusicPlayerScreenContent(
-        modifier = modifier
-            .fillMaxSize(),
-        state = musicPlayerViewState,
-        sendUiEvent = {
-            Timber.d("-----------here1")
-            eventChannel.trySend(it)
+}
+
+@Composable
+private fun setupEventChannel(
+    lifecycleOwner: LifecycleOwner,
+    viewModel: MusicPlayerViewModel
+): Channel<MusicPlayerEvent> {
+    val eventChannel = remember { Channel<MusicPlayerEvent>(Channel.BUFFERED) }
+    val eventFlowLifecycleAware =
+        remember(
+            eventChannel,
+            lifecycleOwner
+        ) {
+            eventChannel.receiveAsFlow()
+                .flowWithLifecycle(
+                    lifecycleOwner.lifecycle,
+                    Lifecycle.State.STARTED
+                )
         }
-    )
+    LaunchedEffect(
+        key1 = eventChannel,
+        key2 = lifecycleOwner,
+    ) {
+        eventFlowLifecycleAware.onEach {
+            viewModel.processInput(it)
+        }
+            .collect()
+    }
+    return eventChannel
 }
 
 @Composable
@@ -184,10 +259,12 @@ fun MusicPlayerScreenContent(
                 .getTimeLabel(),
             totalDuration = state.totalDuration,
             onSliderValueChange = {
-                Timber.d("-----------here10")
                 sendUiEvent(MusicPlayerEvent.SeekToEvent(it.roundToInt()))
             },
-            sliderValue = min(state.elapsedTime.toFloat(), state.totalDuration),
+            sliderValue = min(
+                state.elapsedTime.toFloat(),
+                state.totalDuration
+            ),
         )
         Spacer(modifier = Modifier.height(8.dp))
         Controls(
