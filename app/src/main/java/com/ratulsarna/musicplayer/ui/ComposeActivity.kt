@@ -30,11 +30,9 @@ import com.ratulsarna.musicplayer.ui.ui.theme.TopBlue
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import kotlin.math.min
@@ -108,7 +106,6 @@ fun MusicPlayerScreen(
     LaunchedEffect(true) {
         viewModel.processInput(MusicPlayerEvent.UiCreateEvent)
     }
-    val scope = rememberCoroutineScope()
     // If `lifecycleOwner` changes, dispose and reset the effect
     DisposableEffect(lifecycleOwner) {
         // Create an observer that triggers our remembered callbacks
@@ -116,10 +113,6 @@ fun MusicPlayerScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START) {
                 eventChannel.trySend(MusicPlayerEvent.UiStartEvent)
-                scope.launch {
-                    delay(1000)
-                    eventChannel.send(MusicPlayerEvent.PlayEvent)
-                }
             } else if (event == Lifecycle.Event.ON_STOP) {
                 eventChannel.trySend(MusicPlayerEvent.UiStopEvent)
             }
@@ -166,59 +159,59 @@ fun MusicPlayerScreenContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-//        AlbumArt(
-//            modifier = Modifier
-//                .fillMaxHeight(.55f)
-//                .fillMaxWidth()
-//                .padding(
-//                    horizontal = 48.dp,
-//                    vertical = 16.dp
-//                ),
-//            state.albumArt,
-//        )
+        AlbumArt(
+            modifier = Modifier
+                .fillMaxHeight(.55f)
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 48.dp,
+                    vertical = 16.dp
+                ),
+            state.albumArt,
+        )
         Spacer(modifier = Modifier.height(32.dp))
         SongTitle(
-            title = "${state.songTitle}+${state.elapsedTime}",
+            title = state.songTitle,
             subTitle = state.songInfoLabel
         )
         Spacer(modifier = Modifier.height(32.dp))
-//        SongSeekBar(
-//            modifier = Modifier
-//                .wrapContentHeight()
-//                .fillMaxWidth(),
-//            currentTimeLabel = state.elapsedTime.getTimeLabel(),
-//            totalDurationTimeLabel = state.totalDuration.toInt()
-//                .getTimeLabel(),
-//            totalDuration = state.totalDuration,
-//            onSliderValueChange = {
-//                Timber.d("-----------here10")
-//                sendUiEvent(MusicPlayerEvent.SeekToEvent(it.roundToInt()))
-//            },
-//            sliderValue = min(state.elapsedTime.toFloat(), state.totalDuration),
-//        )
-//        Spacer(modifier = Modifier.height(8.dp))
-//        Controls(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(horizontal = 32.dp),
-//            showPlayButton = state.playing.not(),
-//            onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) },
-//            onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) },
-//            onNext = { sendUiEvent(MusicPlayerEvent.NextSongEvent) },
-//            onPrevious = { sendUiEvent(MusicPlayerEvent.PreviousSongEvent) },
-//            onSeekForward = { sendUiEvent(MusicPlayerEvent.SeekForwardEvent) },
-//            onSeekBackward = { sendUiEvent(MusicPlayerEvent.SeekBackwardEvent) },
-//        )
-//        Spacer(modifier = Modifier.height(32.dp))
-//        Box(
-//            modifier = Modifier
-//                .height(
-//                    32.dp + WindowInsets.navigationBars
-//                        .asPaddingValues()
-//                        .calculateBottomPadding()
-//                )
-//                .fillMaxWidth()
-//        )
+        SongSeekBar(
+            modifier = Modifier
+                .wrapContentHeight()
+                .fillMaxWidth(),
+            currentTimeLabel = state.elapsedTime.getTimeLabel(),
+            totalDurationTimeLabel = state.totalDuration.toInt()
+                .getTimeLabel(),
+            totalDuration = state.totalDuration,
+            onSliderValueChange = {
+                Timber.d("-----------here10")
+                sendUiEvent(MusicPlayerEvent.SeekToEvent(it.roundToInt()))
+            },
+            sliderValue = min(state.elapsedTime.toFloat(), state.totalDuration),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Controls(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            showPlayButton = state.playing.not(),
+            onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) },
+            onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) },
+            onNext = { sendUiEvent(MusicPlayerEvent.NextSongEvent) },
+            onPrevious = { sendUiEvent(MusicPlayerEvent.PreviousSongEvent) },
+            onSeekForward = { sendUiEvent(MusicPlayerEvent.SeekForwardEvent) },
+            onSeekBackward = { sendUiEvent(MusicPlayerEvent.SeekBackwardEvent) },
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        Box(
+            modifier = Modifier
+                .height(
+                    32.dp + WindowInsets.navigationBars
+                        .asPaddingValues()
+                        .calculateBottomPadding()
+                )
+                .fillMaxWidth()
+        )
     }
 }
 
