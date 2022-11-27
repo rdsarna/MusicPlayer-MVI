@@ -1,4 +1,8 @@
-@file:OptIn(ExperimentalAnimationApi::class)
+@file:OptIn(
+    ExperimentalAnimationApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3Api::class
+)
 
 package com.ratulsarna.musicplayer.ui
 
@@ -34,7 +38,9 @@ import com.ratulsarna.musicplayer.ui.ui.theme.MusicPlayerTheme
 import com.ratulsarna.musicplayer.ui.ui.theme.TopBlue
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
+import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffold
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -104,14 +110,36 @@ fun MusicPlayerScreen(
         eventChannel
     )
 
-    MusicPlayerScreenContent(
-        modifier = modifier
-            .fillMaxSize(),
-        state = musicPlayerViewState,
-        sendUiEvent = {
-            eventChannel.trySend(it)
+    BottomSheetScaffold(sheetContent = {
+
+    }) {
+        MusicPlayerScreenContent(
+            modifier = modifier
+                .fillMaxSize(),
+            state = musicPlayerViewState,
+            sendUiEvent = {
+                eventChannel.trySend(it)
+            }
+        )
+    }
+}
+
+@Composable
+private fun setupEventChannel(
+    lifecycleOwner: LifecycleOwner,
+    viewModel: MusicPlayerViewModel
+): Channel<MusicPlayerEvent> {
+    val eventChannel = remember { Channel<MusicPlayerEvent>(Channel.BUFFERED) }
+    LaunchedEffect(
+        key1 = eventChannel,
+        key2 = lifecycleOwner,
+    ) {
+        eventChannel.receiveAsFlow().onEach {
+            viewModel.processInput(it)
         }
-    )
+            .collect()
+    }
+    return eventChannel
 }
 
 @Composable
@@ -190,24 +218,6 @@ private fun LifecycleEvents(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-}
-
-@Composable
-private fun setupEventChannel(
-    lifecycleOwner: LifecycleOwner,
-    viewModel: MusicPlayerViewModel
-): Channel<MusicPlayerEvent> {
-    val eventChannel = remember { Channel<MusicPlayerEvent>(Channel.BUFFERED) }
-    LaunchedEffect(
-        key1 = eventChannel,
-        key2 = lifecycleOwner,
-    ) {
-        eventChannel.receiveAsFlow().onEach {
-            viewModel.processInput(it)
-        }
-            .collect()
-    }
-    return eventChannel
 }
 
 @Composable
@@ -363,15 +373,12 @@ fun SongSeekBar(
             onValueChange = onSliderValueChange,
             valueRange = 0f..totalDuration,
             colors = SliderDefaults.colors(
-                thumbColor = Color.Transparent,
+                thumbColor = Color.White,
                 inactiveTrackColor = Color(0x82FFFFFF),
                 activeTrackColor = Color.White,
                 activeTickColor = Color.Transparent,
                 inactiveTickColor = Color.Transparent,
             ),
-            thumb = {
-
-            }
         )
     }
 }
