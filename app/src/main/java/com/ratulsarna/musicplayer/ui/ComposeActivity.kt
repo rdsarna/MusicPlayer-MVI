@@ -1,11 +1,13 @@
+@file:OptIn(ExperimentalAnimationApi::class)
+
 package com.ratulsarna.musicplayer.ui
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -166,10 +168,19 @@ private fun LifecycleEvents(
         // Create an observer that triggers our remembered callbacks
         // for sending analytics events
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_START) {
-                eventChannel.trySend(MusicPlayerEvent.UiStartEvent)
-            } else if (event == Lifecycle.Event.ON_STOP) {
-                eventChannel.trySend(MusicPlayerEvent.UiStopEvent)
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> {
+                    eventChannel.trySend(MusicPlayerEvent.UiCreateEvent)
+                }
+                Lifecycle.Event.ON_START -> {
+                    eventChannel.trySend(MusicPlayerEvent.UiStartEvent)
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    eventChannel.trySend(MusicPlayerEvent.UiStopEvent)
+                }
+                else -> {
+                    // ignore
+                }
             }
         }
         // Add the observer to the lifecycle
@@ -402,13 +413,22 @@ fun Controls(
             contentScale = ContentScale.Inside
         )
         Box {
-            if (showPlayButton) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showPlayButton,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut()
+            ) {
                 ControlImage(
                     id = R.drawable.ic_play,
                     onClick = { onPlay() },
                     contentScale = ContentScale.Fit
                 )
-            } else {
+            }
+            androidx.compose.animation.AnimatedVisibility(
+                visible = !showPlayButton,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut()
+            ) {
                 ControlImage(
                     id = R.drawable.ic_pause,
                     onClick = { onPause() },
