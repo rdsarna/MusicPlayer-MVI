@@ -14,11 +14,16 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -37,11 +42,15 @@ import com.ratulsarna.musicplayer.ui.ui.theme.*
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffold
+import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetValue
+import fr.swarmlab.beta.ui.screens.components.material3.rememberBottomSheetScaffoldState
+import fr.swarmlab.beta.ui.screens.components.material3.rememberBottomSheetState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -108,30 +117,61 @@ fun MusicPlayerScreen(
         eventChannel
     )
 
+    val sheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = sheetState
+    )
+    val scope = rememberCoroutineScope()
     BottomSheetScaffold(
+        scaffoldState = scaffoldState,
         sheetContent = {
             Column(
-                modifier = Modifier.background(Color.Transparent)
+                modifier = Modifier
+                    .height(500.dp)
+                    .background(LightGrayTransparent)
             ) {
                 Text(
                     modifier = Modifier
-                        .background(LightGrayTransparent)
                         .padding(16.dp)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (sheetState.isCollapsed) {
+                                scope.launch { sheetState.expand() }
+                            } else {
+                                scope.launch { sheetState.collapse() }
+                            }
+                        },
                     text = "Up Next",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
-                Spacer(
-                    modifier = Modifier.size(
-                        WindowInsets.navigationBars
-                            .asPaddingValues()
-                            .calculateBottomPadding()
+                if (sheetState.isCollapsed) {
+                    Spacer(
+                        modifier = Modifier
+                            .size(
+                                WindowInsets.navigationBars
+                                    .asPaddingValues()
+                                    .calculateBottomPadding()
+                            )
                     )
-                )
+                }
+                LazyColumn(
+                    modifier = Modifier
+                        .background(Color.Black)
+                        .fillMaxSize(),
+                    content = {
+
+                    })
             }
         },
-        sheetBackgroundColor = Color.Transparent
+        sheetBackgroundColor = Color.Transparent,
+        sheetPeekHeight = 48.dp + WindowInsets.navigationBars
+            .asPaddingValues()
+            .calculateBottomPadding()
     ) {
         MusicPlayerScreenContent(
             modifier = modifier
@@ -328,18 +368,14 @@ fun AlbumArt(modifier: Modifier, @DrawableRes albumRes: Int) {
     Box(
         modifier = modifier
     ) {
-        Card(
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        Image(
+            painter = painterResource(id = albumRes),
+            contentDescription = "",
             modifier = Modifier
                 .aspectRatio(1f)
                 .align(Alignment.BottomCenter)
-        ) {
-            Image(
-                painter = painterResource(id = albumRes),
-                contentDescription = "",
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+                .clip(RoundedCornerShape(8.dp))
+        )
     }
 }
 
