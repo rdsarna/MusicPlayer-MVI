@@ -13,3 +13,5 @@ val Pink40 = Color(0xFF7D5260)
 val BottomBlue = Color(0xFF0000FF)
 val MidBlue = Color(0xFF4169E1)
 val TopBlue = Color(0xFF1E90FF)
+
+val LightGrayTransparent = Color(0x50000000)

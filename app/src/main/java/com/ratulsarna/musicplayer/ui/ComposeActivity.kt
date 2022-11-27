@@ -26,16 +26,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
 import com.ratulsarna.musicplayer.R
-import com.ratulsarna.musicplayer.ui.ui.theme.BottomBlue
-import com.ratulsarna.musicplayer.ui.ui.theme.MidBlue
-import com.ratulsarna.musicplayer.ui.ui.theme.MusicPlayerTheme
-import com.ratulsarna.musicplayer.ui.ui.theme.TopBlue
+import com.ratulsarna.musicplayer.ui.ui.theme.*
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffold
@@ -110,9 +108,31 @@ fun MusicPlayerScreen(
         eventChannel
     )
 
-    BottomSheetScaffold(sheetContent = {
-
-    }) {
+    BottomSheetScaffold(
+        sheetContent = {
+            Column(
+                modifier = Modifier.background(Color.Transparent)
+            ) {
+                Text(
+                    modifier = Modifier
+                        .background(LightGrayTransparent)
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    text = "Up Next",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
+                Spacer(
+                    modifier = Modifier.size(
+                        WindowInsets.navigationBars
+                            .asPaddingValues()
+                            .calculateBottomPadding()
+                    )
+                )
+            }
+        },
+        sheetBackgroundColor = Color.Transparent
+    ) {
         MusicPlayerScreenContent(
             modifier = modifier
                 .fillMaxSize(),
@@ -134,9 +154,10 @@ private fun setupEventChannel(
         key1 = eventChannel,
         key2 = lifecycleOwner,
     ) {
-        eventChannel.receiveAsFlow().onEach {
-            viewModel.processInput(it)
-        }
+        eventChannel.receiveAsFlow()
+            .onEach {
+                viewModel.processInput(it)
+            }
             .collect()
     }
     return eventChannel
@@ -293,7 +314,7 @@ fun MusicPlayerScreenContent(
         Box(
             modifier = Modifier
                 .height(
-                    32.dp + WindowInsets.navigationBars
+                    48.dp + WindowInsets.navigationBars
                         .asPaddingValues()
                         .calculateBottomPadding()
                 )
