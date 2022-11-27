@@ -80,7 +80,6 @@ class MusicPlayerViewModel @Inject constructor(
     }
 
     suspend fun processInput(event: MusicPlayerEvent) {
-        Timber.d("-----------here2")
         _eventFlow.emit(event)
     }
 
@@ -118,7 +117,6 @@ class MusicPlayerViewModel @Inject constructor(
                     )
                 } ?: vs
                 is NewSongResult -> {
-                    Timber.d("-----------here4")
                     result.song?.let { song ->
                         vs.copy(
                             loading = false,
@@ -134,7 +132,6 @@ class MusicPlayerViewModel @Inject constructor(
                     } ?: vs
                 }
                 is SeekToResult -> {
-                    Timber.d("-----------here5")
                     vs.copy(elapsedTime = result.position)
                 }
                 UiStopResult -> vs
@@ -237,7 +234,6 @@ class MusicPlayerViewModel @Inject constructor(
 
     private fun onNextSong(flow: Flow<NextSongEvent>): Flow<NewSongResult> =
         flow.map {
-            Timber.d("-----------here3-2")
             upNextSongsController.nextSong()
         }.newSongResultFromSong()
 
@@ -260,7 +256,6 @@ class MusicPlayerViewModel @Inject constructor(
         }
     private fun onSeekTo(flow: Flow<SeekToEvent>): Flow<SeekToResult> =
         flow.map {
-            Timber.d("-----------here3")
             SeekToResult(
                 mediaPlayerController.seekTo(it.position)
             )

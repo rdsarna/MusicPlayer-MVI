@@ -187,22 +187,11 @@ private fun setupEventChannel(
     viewModel: MusicPlayerViewModel
 ): Channel<MusicPlayerEvent> {
     val eventChannel = remember { Channel<MusicPlayerEvent>(Channel.BUFFERED) }
-    val eventFlowLifecycleAware =
-        remember(
-            eventChannel,
-            lifecycleOwner
-        ) {
-            eventChannel.receiveAsFlow()
-                .flowWithLifecycle(
-                    lifecycleOwner.lifecycle,
-                    Lifecycle.State.STARTED
-                )
-        }
     LaunchedEffect(
         key1 = eventChannel,
         key2 = lifecycleOwner,
     ) {
-        eventFlowLifecycleAware.onEach {
+        eventChannel.receiveAsFlow().onEach {
             viewModel.processInput(it)
         }
             .collect()

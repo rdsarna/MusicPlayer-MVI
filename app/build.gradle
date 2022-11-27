@@ -5,21 +5,13 @@ plugins {
 }
 
 android {
-    signingConfigs {
-        release {
-            storeFile file('C:\\Developer\\Personal\\Projects\\MusicPlayerKeyStore\\keystore.jks')
-            storePassword 'musicplayer'
-            keyAlias 'key0'
-            keyPassword 'musicplayer'
-        }
-    }
     compileSdk 33
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         applicationId "com.ratulsarna.musicplayer"
         minSdk 21
-        targetSdk 32
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
