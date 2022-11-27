@@ -13,8 +13,8 @@ data class MusicPlayerViewState(
     @DrawableRes val albumArt: Int,
     val totalDuration: Float,
     val elapsedTime: Int,
-    val nextSongLabel: String,
-    val upNextSongs: List<PlaylistViewSong>,
+    val currentPlaylistSong: PlaylistViewSong?,
+    val playlist: List<PlaylistViewSong>,
 ) {
     companion object {
         val INITIAL = MusicPlayerViewState(
@@ -25,8 +25,8 @@ data class MusicPlayerViewState(
             albumArt = R.drawable.placeholder,
             totalDuration = 1f,
             elapsedTime = 0,
-            nextSongLabel = "",
-            upNextSongs = emptyList(),
+            currentPlaylistSong = null,
+            playlist = emptyList(),
         )
     }
 }

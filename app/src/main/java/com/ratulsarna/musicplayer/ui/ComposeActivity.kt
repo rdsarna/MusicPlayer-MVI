@@ -1,14 +1,12 @@
 @file:OptIn(
     ExperimentalAnimationApi::class,
     ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3Api::class
 )
 
 package com.ratulsarna.musicplayer.ui
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.*
@@ -18,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,12 +27,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
@@ -45,11 +44,6 @@ import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffold
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetValue
 import fr.swarmlab.beta.ui.screens.components.material3.rememberBottomSheetScaffoldState
 import fr.swarmlab.beta.ui.screens.components.material3.rememberBottomSheetState
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.min
@@ -64,7 +58,6 @@ class ComposeActivity : DaggerAppCompatActivity() {
         viewModelProvider(viewModelFactory)
     }
 
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(
@@ -122,12 +115,22 @@ fun MusicPlayerScreen(
         bottomSheetState = sheetState
     )
     val scope = rememberCoroutineScope()
+    val statusBarHeight = WindowInsets.statusBars
+        .asPaddingValues()
+        .calculateTopPadding()
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
+        sheetShape = RoundedCornerShape(
+            topStart = 16.dp,
+            topEnd = 16.dp
+        ),
         sheetContent = {
             Column(
                 modifier = Modifier
-                    .height(500.dp)
+                    .height(
+                        LocalConfiguration.current.screenHeightDp.dp + statusBarHeight - 100.dp
+                    )
+                    .navigationBarsPadding()
                     .background(LightGrayTransparent)
             ) {
                 Text(
@@ -149,23 +152,40 @@ fun MusicPlayerScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
-                if (sheetState.isCollapsed) {
-                    Spacer(
-                        modifier = Modifier
-                            .size(
-                                WindowInsets.navigationBars
-                                    .asPaddingValues()
-                                    .calculateBottomPadding()
-                            )
-                    )
-                }
                 LazyColumn(
                     modifier = Modifier
-                        .background(Color.Black)
                         .fillMaxSize(),
                     content = {
-
-                    })
+                        items(musicPlayerViewState.playlist) { playlistSong ->
+                            Row(
+                                modifier = Modifier.padding(
+                                    horizontal = 32.dp,
+                                    vertical = 16.dp
+                                )
+                            ) {
+                                Image(
+                                    modifier = Modifier
+                                        .height(48.dp)
+                                        .aspectRatio(1f),
+                                    painter = painterResource(id = playlistSong.albumArt),
+                                    contentDescription = ""
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .align(Alignment.CenterVertically),
+                                ) {
+                                    Text(
+                                        text = playlistSong.title,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
             }
         },
         sheetBackgroundColor = Color.Transparent,
@@ -177,6 +197,7 @@ fun MusicPlayerScreen(
             modifier = modifier
                 .fillMaxSize(),
             state = musicPlayerViewState,
+            statusBarHeight = statusBarHeight,
             sendUiEvent = {
                 eventChannel.trySend(it)
             }
@@ -185,180 +206,96 @@ fun MusicPlayerScreen(
 }
 
 @Composable
-private fun setupEventChannel(
-    lifecycleOwner: LifecycleOwner,
-    viewModel: MusicPlayerViewModel
-): Channel<MusicPlayerEvent> {
-    val eventChannel = remember { Channel<MusicPlayerEvent>(Channel.BUFFERED) }
-    LaunchedEffect(
-        key1 = eventChannel,
-        key2 = lifecycleOwner,
-    ) {
-        eventChannel.receiveAsFlow()
-            .onEach {
-                viewModel.processInput(it)
-            }
-            .collect()
-    }
-    return eventChannel
-}
-
-@Composable
-private fun ViewEffects(
-    lifecycleOwner: LifecycleOwner,
-    viewModel: MusicPlayerViewModel,
-) {
-    val context = LocalContext.current
-    val effectFlowLifecycleAware =
-        remember(
-            viewModel.viewEffects,
-            lifecycleOwner
-        ) {
-            viewModel.viewEffects
-                .flowWithLifecycle(
-                    lifecycleOwner.lifecycle,
-                    Lifecycle.State.STARTED
-                )
-        }
-    LaunchedEffect(
-        key1 = viewModel.viewEffects,
-        key2 = lifecycleOwner,
-    ) {
-        effectFlowLifecycleAware.collect { effect ->
-            when (effect) {
-                is MusicPlayerEffect.ShowErrorEffect -> {
-                    Toast.makeText(
-                        context,
-                        effect.errorMessage,
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                }
-                is MusicPlayerEffect.ForceScreenOnEffect,
-                MusicPlayerEffect.NoOpEffect -> {
-                    // ignore
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LifecycleEvents(
-    viewModel: MusicPlayerViewModel,
-    lifecycleOwner: LifecycleOwner,
-    eventChannel: Channel<MusicPlayerEvent>
-) {
-    LaunchedEffect(true) {
-        viewModel.processInput(MusicPlayerEvent.UiCreateEvent)
-    }
-    // If `lifecycleOwner` changes, dispose and reset the effect
-    DisposableEffect(lifecycleOwner) {
-        // Create an observer that triggers our remembered callbacks
-        // for sending analytics events
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_CREATE -> {
-                    eventChannel.trySend(MusicPlayerEvent.UiCreateEvent)
-                }
-                Lifecycle.Event.ON_START -> {
-                    eventChannel.trySend(MusicPlayerEvent.UiStartEvent)
-                }
-                Lifecycle.Event.ON_STOP -> {
-                    eventChannel.trySend(MusicPlayerEvent.UiStopEvent)
-                }
-                else -> {
-                    // ignore
-                }
-            }
-        }
-        // Add the observer to the lifecycle
-        lifecycleOwner.lifecycle.addObserver(observer)
-        // When the effect leaves the Composition, remove the observer
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-}
-
-@Composable
 fun MusicPlayerScreenContent(
     modifier: Modifier = Modifier,
     state: MusicPlayerViewState,
-    sendUiEvent: (MusicPlayerEvent) -> Unit
+    sendUiEvent: (MusicPlayerEvent) -> Unit,
+    statusBarHeight: Dp = 0.dp,
 ) {
-    Column(
-        modifier = modifier.background(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    BottomBlue,
-                    MidBlue,
-                    TopBlue,
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            BottomBlue,
+                            MidBlue,
+                            TopBlue,
+                        ),
+                        center = Offset(
+                            0f,
+                            Float.POSITIVE_INFINITY
+                        ),
+                        radius = 2800f
+                    )
                 ),
-                center = Offset(
-                    0f,
-                    Float.POSITIVE_INFINITY
-                ),
-                radius = 2800f
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            AlbumArt(
+                modifier = Modifier
+                    .fillMaxHeight(.55f)
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 48.dp,
+                        vertical = 16.dp
+                    ),
+                state.albumArt,
             )
-        ),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        AlbumArt(
-            modifier = Modifier
-                .fillMaxHeight(.55f)
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 48.dp,
-                    vertical = 16.dp
+            Spacer(modifier = Modifier.height(32.dp))
+            SongTitle(
+                title = state.songTitle,
+                subTitle = state.songInfoLabel
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            SongSeekBar(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth(),
+                currentTimeLabel = state.elapsedTime.getTimeLabel(),
+                totalDurationTimeLabel = state.totalDuration.toInt()
+                    .getTimeLabel(),
+                totalDuration = state.totalDuration,
+                onSliderValueChange = {
+                    sendUiEvent(MusicPlayerEvent.SeekToEvent(it.roundToInt()))
+                },
+                sliderValue = min(
+                    state.elapsedTime.toFloat(),
+                    state.totalDuration
                 ),
-            state.albumArt,
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        SongTitle(
-            title = state.songTitle,
-            subTitle = state.songInfoLabel
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        SongSeekBar(
-            modifier = Modifier
-                .wrapContentHeight()
-                .fillMaxWidth(),
-            currentTimeLabel = state.elapsedTime.getTimeLabel(),
-            totalDurationTimeLabel = state.totalDuration.toInt()
-                .getTimeLabel(),
-            totalDuration = state.totalDuration,
-            onSliderValueChange = {
-                sendUiEvent(MusicPlayerEvent.SeekToEvent(it.roundToInt()))
-            },
-            sliderValue = min(
-                state.elapsedTime.toFloat(),
-                state.totalDuration
-            ),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Controls(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            showPlayButton = state.playing.not(),
-            onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) },
-            onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) },
-            onNext = { sendUiEvent(MusicPlayerEvent.NextSongEvent) },
-            onPrevious = { sendUiEvent(MusicPlayerEvent.PreviousSongEvent) },
-            onSeekForward = { sendUiEvent(MusicPlayerEvent.SeekForwardEvent) },
-            onSeekBackward = { sendUiEvent(MusicPlayerEvent.SeekBackwardEvent) },
-        )
-        Spacer(modifier = Modifier.height(32.dp))
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Controls(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                showPlayButton = state.playing.not(),
+                onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) },
+                onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) },
+                onNext = { sendUiEvent(MusicPlayerEvent.NextSongEvent) },
+                onPrevious = { sendUiEvent(MusicPlayerEvent.PreviousSongEvent) },
+                onSeekForward = { sendUiEvent(MusicPlayerEvent.SeekForwardEvent) },
+                onSeekBackward = { sendUiEvent(MusicPlayerEvent.SeekBackwardEvent) },
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Box(
+                modifier = Modifier
+                    .height(
+                        48.dp + WindowInsets.navigationBars
+                            .asPaddingValues()
+                            .calculateBottomPadding()
+                    )
+                    .fillMaxWidth()
+            )
+        }
         Box(
             modifier = Modifier
-                .height(
-                    48.dp + WindowInsets.navigationBars
-                        .asPaddingValues()
-                        .calculateBottomPadding()
-                )
                 .fillMaxWidth()
+                .height(100.dp + statusBarHeight)
+                .align(Alignment.TopCenter)
+                .background(Color.Red)
+                .statusBarsPadding()
         )
     }
 }

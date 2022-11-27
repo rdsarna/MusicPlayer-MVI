@@ -15,10 +15,10 @@ class UpNextSongsController @Inject constructor(
     fun loadDefaultPlaylistSongs(): List<Song> {
         _currentPlaylist = playlistsRepository.getDefaultPlaylist()
         require(_currentPlaylist?.songs?.isNotEmpty() == true)
-        return upNextSongList()
+        return playlist()
     }
 
-    fun currentUpNextSongList(): List<Song> = upNextSongList()
+    fun currentPlaylist(): List<Song> = playlist()
 
     fun currentSong(): Song? = _currentPlaylist?.let {
         it.songs[_currentSongPosition].song
@@ -53,15 +53,6 @@ class UpNextSongsController @Inject constructor(
         return currentSong()
     }
 
-    private fun upNextSongList() =
-        _currentPlaylist?.songs?.toMutableList()?.let { songs ->
-            songs.map { it.song }
-                .let {
-                    mutableListOf<Song>().apply {
-                        addAll(it.subList(_currentSongPosition, songs.size))
-                        addAll(it.subList(0, _currentSongPosition))
-                    }
-                }
-                .filter { it.id != songs[_currentSongPosition].song.id }
-        } ?: emptyList()
+    private fun playlist() =
+        _currentPlaylist?.songs?.map { it.song } ?: emptyList()
 }

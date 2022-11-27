@@ -9,7 +9,6 @@ import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerResult.*
 import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerController
 import com.ratulsarna.musicplayer.ui.controllers.UpNextSongsController
-import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
@@ -104,7 +103,7 @@ class MusicPlayerViewModel @Inject constructor(
     private fun Flow<MusicPlayerResult>.resultToViewState(): Flow<MusicPlayerViewState> {
         return scan(MusicPlayerViewState.INITIAL) { vs, result ->
             when (result) {
-                is UiCreateResult -> vs.copy(upNextSongs = result.upNextSongList)
+                is UiCreateResult -> vs.copy(playlist = result.playlist)
                 is UiStartResult -> result.song?.let { song ->
                     vs.copy(
                         loading = false,
@@ -113,7 +112,7 @@ class MusicPlayerViewModel @Inject constructor(
                         albumArt = song.albumArtResId,
                         totalDuration = result.duration.toFloat(),
                         playing = result.playing ?: vs.playing,
-                        nextSongLabel = "Up Next: ${result.nextSong?.title}",
+                        currentPlaylistSong = song.toPlaylistViewSong(),
                     )
                 } ?: vs
                 is NewSongResult -> {
@@ -123,11 +122,10 @@ class MusicPlayerViewModel @Inject constructor(
                             songTitle = song.title,
                             songInfoLabel = "${song.artistName} | ${song.year}",
                             albumArt = song.albumArtResId,
-                            nextSongLabel = "Up Next: ${result.nextSong?.title}",
                             elapsedTime = 0,
                             totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
                             playing = result.playing,
-                            upNextSongs = result.upNextSongList
+                            currentPlaylistSong = song.toPlaylistViewSong(),
                         )
                     } ?: vs
                 }
@@ -164,9 +162,6 @@ class MusicPlayerViewModel @Inject constructor(
         }
     }
 
-    private val upNextSongList: List<PlaylistViewSong>
-        get() = upNextSongsController.currentUpNextSongList().map { it.toPlaylistViewSong() }
-
     private fun onUiCreate(flow: Flow<UiCreateEvent>): Flow<UiCreateResult> =
         flow.map {
             UiCreateResult(
@@ -181,7 +176,6 @@ class MusicPlayerViewModel @Inject constructor(
                 emit(
                     UiStartResult(
                         upNextSongsController.currentSong(),
-                        upNextSongsController.peekNextSong(),
                         1,
                         playing = null,
                         errorLoadingSong = false,
@@ -207,7 +201,6 @@ class MusicPlayerViewModel @Inject constructor(
                 emit(
                     UiStartResult(
                         upNextSongsController.currentSong(),
-                        upNextSongsController.peekNextSong(),
                         duration,
                         playing = playing,
                         errorLoadingSong = !loadSuccess,
@@ -279,9 +272,7 @@ class MusicPlayerViewModel @Inject constructor(
             emit(
                 NewSongResult(
                     song,
-                    upNextSongsController.peekNextSong(),
                     -1,
-                    upNextSongList,
                     playing = false,
                     errorLoading = false,
                 )
@@ -298,10 +289,8 @@ class MusicPlayerViewModel @Inject constructor(
             }
             emit(
                 NewSongResult(
-                    song,
-                    upNextSongsController.peekNextSong(),
-                    duration,
-                    upNextSongList,
+                    song = song,
+                    duration = duration,
                     playing = playing,
                     errorLoading = !loadSuccess
                 )
