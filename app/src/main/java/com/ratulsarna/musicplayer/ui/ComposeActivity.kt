@@ -22,7 +22,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,12 +42,11 @@ import com.ratulsarna.musicplayer.R
 import com.ratulsarna.musicplayer.ui.ui.theme.*
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
-import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffold
-import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetValue
-import fr.swarmlab.beta.ui.screens.components.material3.rememberBottomSheetScaffoldState
-import fr.swarmlab.beta.ui.screens.components.material3.rememberBottomSheetState
+import fr.swarmlab.beta.ui.screens.components.material3.*
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -118,6 +119,9 @@ fun MusicPlayerScreen(
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
         .calculateTopPadding()
+    val navigationBarHeight = WindowInsets.navigationBars
+        .asPaddingValues()
+        .calculateBottomPadding()
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(
@@ -130,14 +134,13 @@ fun MusicPlayerScreen(
                     .height(
                         LocalConfiguration.current.screenHeightDp.dp + statusBarHeight - 100.dp
                     )
-                    .navigationBarsPadding()
                     .background(LightGrayTransparent)
+                    .navigationBarsPadding()
             ) {
                 Text(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth()
-                        .height(48.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
@@ -151,6 +154,13 @@ fun MusicPlayerScreen(
                     text = "Up Next",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White
+                )
+                Spacer(
+                    modifier = Modifier
+                        .height(navigationBarHeight)
+                        .fillMaxWidth()
+                        .background(Color.Black)
+                        .scale(scaffoldState.currentFraction)
                 )
                 LazyColumn(
                     modifier = Modifier
@@ -166,7 +176,8 @@ fun MusicPlayerScreen(
                                 Image(
                                     modifier = Modifier
                                         .height(48.dp)
-                                        .aspectRatio(1f),
+                                        .aspectRatio(1f)
+                                        .clip(RoundedCornerShape(6.dp)),
                                     painter = painterResource(id = playlistSong.albumArt),
                                     contentDescription = ""
                                 )
@@ -179,6 +190,11 @@ fun MusicPlayerScreen(
                                     Text(
                                         text = playlistSong.title,
                                         style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = playlistSong.infoLabel,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = Color.White
                                     )
                                 }
@@ -198,6 +214,8 @@ fun MusicPlayerScreen(
                 .fillMaxSize(),
             state = musicPlayerViewState,
             statusBarHeight = statusBarHeight,
+            navigationBarHeight = navigationBarHeight,
+            mainContentScale = scaffoldState.currentFraction,
             sendUiEvent = {
                 eventChannel.trySend(it)
             }
@@ -209,8 +227,10 @@ fun MusicPlayerScreen(
 fun MusicPlayerScreenContent(
     modifier: Modifier = Modifier,
     state: MusicPlayerViewState,
-    sendUiEvent: (MusicPlayerEvent) -> Unit,
     statusBarHeight: Dp = 0.dp,
+    navigationBarHeight: Dp = 0.dp,
+    mainContentScale: Float = 1f,
+    sendUiEvent: (MusicPlayerEvent) -> Unit,
 ) {
     Box(modifier = modifier) {
         Column(
@@ -228,6 +248,13 @@ fun MusicPlayerScreenContent(
                             Float.POSITIVE_INFINITY
                         ),
                         radius = 2800f
+                    )
+                )
+                .scale(1f - mainContentScale)
+                .alpha(
+                    max(
+                        0f,
+                        1f - mainContentScale * 2
                     )
                 ),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -281,11 +308,7 @@ fun MusicPlayerScreenContent(
             Spacer(modifier = Modifier.height(32.dp))
             Box(
                 modifier = Modifier
-                    .height(
-                        48.dp + WindowInsets.navigationBars
-                            .asPaddingValues()
-                            .calculateBottomPadding()
-                    )
+                    .height(48.dp + navigationBarHeight)
                     .fillMaxWidth()
             )
         }
@@ -495,3 +518,16 @@ fun Int.getTimeLabel(): String {
     val seconds = this / 1000 % 60
     return "$minutes:${if (seconds < 10) "0$seconds" else seconds}"
 }
+
+val BottomSheetScaffoldState.currentFraction: Float
+    get() {
+        val fraction = bottomSheetState.progress.fraction
+        val from = bottomSheetState.progress.from
+        val to = bottomSheetState.progress.to
+        return when {
+            from == BottomSheetValue.Collapsed && to == BottomSheetValue.Collapsed -> 0f
+            from == BottomSheetValue.Expanded && to == BottomSheetValue.Expanded -> 1f
+            from == BottomSheetValue.Collapsed && to == BottomSheetValue.Expanded -> fraction
+            else -> 1f - fraction
+        }
+    }
