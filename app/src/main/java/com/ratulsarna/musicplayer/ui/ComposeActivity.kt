@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -44,7 +43,6 @@ import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import fr.swarmlab.beta.ui.screens.components.material3.*
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
@@ -155,12 +153,12 @@ fun MusicPlayerScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
-                Spacer(
+                NavigationBarPaddingBox(
                     modifier = Modifier
                         .height(navigationBarHeight)
                         .fillMaxWidth()
-                        .background(Color.Black)
-                        .scale(scaffoldState.currentFraction)
+                        .background(Color.Black),
+                    scaffoldState.currentFraction
                 )
                 LazyColumn(
                     modifier = Modifier
@@ -215,7 +213,7 @@ fun MusicPlayerScreen(
             state = musicPlayerViewState,
             statusBarHeight = statusBarHeight,
             navigationBarHeight = navigationBarHeight,
-            mainContentScale = scaffoldState.currentFraction,
+            bottomSheetProgressFraction = scaffoldState.currentFraction,
             sendUiEvent = {
                 eventChannel.trySend(it)
             }
@@ -224,12 +222,20 @@ fun MusicPlayerScreen(
 }
 
 @Composable
+fun NavigationBarPaddingBox(modifier: Modifier = Modifier, bottomSheetProgressFraction: Float = 1f) {
+    Box(
+        modifier = modifier
+            .alpha(1f - bottomSheetProgressFraction)
+    )
+}
+
+@Composable
 fun MusicPlayerScreenContent(
     modifier: Modifier = Modifier,
     state: MusicPlayerViewState,
     statusBarHeight: Dp = 0.dp,
     navigationBarHeight: Dp = 0.dp,
-    mainContentScale: Float = 1f,
+    bottomSheetProgressFraction: Float = 1f,
     sendUiEvent: (MusicPlayerEvent) -> Unit,
 ) {
     Box(modifier = modifier) {
@@ -249,13 +255,6 @@ fun MusicPlayerScreenContent(
                         ),
                         radius = 2800f
                     )
-                )
-                .scale(1f - mainContentScale)
-                .alpha(
-                    max(
-                        0f,
-                        1f - mainContentScale * 2
-                    )
                 ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
@@ -267,11 +266,18 @@ fun MusicPlayerScreenContent(
                     .padding(
                         horizontal = 48.dp,
                         vertical = 16.dp
-                    ),
-                state.albumArt,
+                    )
+                    .offset(x = 100.dp.times(bottomSheetProgressFraction)),
+                albumRes = state.albumArt,
             )
             Spacer(modifier = Modifier.height(32.dp))
             SongTitle(
+                modifier = Modifier.alpha(
+                    max(
+                        0f,
+                        1f - bottomSheetProgressFraction * 2
+                    )
+                ),
                 title = state.songTitle,
                 subTitle = state.songInfoLabel
             )
@@ -279,7 +285,13 @@ fun MusicPlayerScreenContent(
             SongSeekBar(
                 modifier = Modifier
                     .wrapContentHeight()
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .alpha(
+                        max(
+                            0f,
+                            1f - bottomSheetProgressFraction * 2
+                        )
+                    ),
                 currentTimeLabel = state.elapsedTime.getTimeLabel(),
                 totalDurationTimeLabel = state.totalDuration.toInt()
                     .getTimeLabel(),
@@ -296,7 +308,13 @@ fun MusicPlayerScreenContent(
             Controls(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = 32.dp)
+                    .alpha(
+                        max(
+                            0f,
+                            1f - bottomSheetProgressFraction * 2
+                        )
+                    ),
                 showPlayButton = state.playing.not(),
                 onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) },
                 onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) },
@@ -342,6 +360,7 @@ fun AlbumArt(modifier: Modifier, @DrawableRes albumRes: Int) {
 @Composable
 fun SongTitle(modifier: Modifier = Modifier, title: String, subTitle: String) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
