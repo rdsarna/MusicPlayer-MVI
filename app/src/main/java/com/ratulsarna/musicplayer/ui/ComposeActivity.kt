@@ -28,13 +28,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
 import com.ratulsarna.musicplayer.R
@@ -43,6 +46,7 @@ import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import fr.swarmlab.beta.ui.screens.components.material3.*
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
@@ -70,6 +74,9 @@ class ComposeActivity : DaggerAppCompatActivity() {
         }
     }
 }
+
+private val ExpandedImageSize = 300.dp
+private val CollapsedImageSize = 80.dp
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
@@ -213,7 +220,7 @@ fun MusicPlayerScreen(
             state = musicPlayerViewState,
             statusBarHeight = statusBarHeight,
             navigationBarHeight = navigationBarHeight,
-            bottomSheetProgressFraction = scaffoldState.currentFraction,
+            bottomSheetProgressFractionProvider = { scaffoldState.currentFraction },
             sendUiEvent = {
                 eventChannel.trySend(it)
             }
@@ -222,7 +229,10 @@ fun MusicPlayerScreen(
 }
 
 @Composable
-fun NavigationBarPaddingBox(modifier: Modifier = Modifier, bottomSheetProgressFraction: Float = 1f) {
+fun NavigationBarPaddingBox(
+    modifier: Modifier = Modifier,
+    bottomSheetProgressFraction: Float = 1f
+) {
     Box(
         modifier = modifier
             .alpha(1f - bottomSheetProgressFraction)
@@ -235,7 +245,7 @@ fun MusicPlayerScreenContent(
     state: MusicPlayerViewState,
     statusBarHeight: Dp = 0.dp,
     navigationBarHeight: Dp = 0.dp,
-    bottomSheetProgressFraction: Float = 1f,
+    bottomSheetProgressFractionProvider: () -> Float = { 1f },
     sendUiEvent: (MusicPlayerEvent) -> Unit,
 ) {
     Box(modifier = modifier) {
@@ -261,21 +271,20 @@ fun MusicPlayerScreenContent(
         ) {
             AlbumArt(
                 modifier = Modifier
-                    .fillMaxHeight(.55f)
-                    .fillMaxWidth()
                     .padding(
-                        horizontal = 48.dp,
-                        vertical = 16.dp
+                        horizontal = 16.dp,
+                        vertical = 8.dp
                     )
-                    .offset(x = 100.dp.times(bottomSheetProgressFraction)),
+                    .statusBarsPadding(),
                 albumRes = state.albumArt,
+                bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
             )
             Spacer(modifier = Modifier.height(32.dp))
             SongTitle(
                 modifier = Modifier.alpha(
                     max(
                         0f,
-                        1f - bottomSheetProgressFraction * 2
+                        1f - bottomSheetProgressFractionProvider() * 2
                     )
                 ),
                 title = state.songTitle,
@@ -289,7 +298,7 @@ fun MusicPlayerScreenContent(
                     .alpha(
                         max(
                             0f,
-                            1f - bottomSheetProgressFraction * 2
+                            1f - bottomSheetProgressFractionProvider() * 2
                         )
                     ),
                 currentTimeLabel = state.elapsedTime.getTimeLabel(),
@@ -312,7 +321,7 @@ fun MusicPlayerScreenContent(
                     .alpha(
                         max(
                             0f,
-                            1f - bottomSheetProgressFraction * 2
+                            1f - bottomSheetProgressFractionProvider() * 2
                         )
                     ),
                 showPlayButton = state.playing.not(),
@@ -330,30 +339,87 @@ fun MusicPlayerScreenContent(
                     .fillMaxWidth()
             )
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp + statusBarHeight)
-                .align(Alignment.TopCenter)
-                .background(Color.Red)
-                .statusBarsPadding()
-        )
     }
 }
 
 @Composable
-fun AlbumArt(modifier: Modifier, @DrawableRes albumRes: Int) {
-    Box(
-        modifier = modifier
+fun AlbumArt(
+    modifier: Modifier,
+    @DrawableRes albumRes: Int,
+    bottomSheetProgressFractionProvider: () -> Float
+) {
+    CollapsingImageLayout(
+        modifier = modifier,
+        bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
     ) {
         Image(
             painter = painterResource(id = albumRes),
             contentDescription = "",
             modifier = Modifier
-                .aspectRatio(1f)
-                .align(Alignment.BottomCenter)
+                .fillMaxSize()
                 .clip(RoundedCornerShape(8.dp))
         )
+    }
+}
+
+@Composable
+private fun CollapsingImageLayout(
+    bottomSheetProgressFractionProvider: () -> Float,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Layout(
+        modifier = modifier,
+        content = content
+    ) { measurables, constraints ->
+        check(measurables.size == 1)
+
+        val collapseFraction = bottomSheetProgressFractionProvider()
+
+        val imageMaxSize =
+            min(
+                ExpandedImageSize.roundToPx(),
+                constraints.maxWidth
+            )
+        val imageMinSize =
+            max(
+                CollapsedImageSize.roundToPx(),
+                constraints.minWidth
+            )
+        val imageWidth =
+            androidx.compose.ui.util.lerp(
+                imageMaxSize,
+                imageMinSize,
+                collapseFraction
+            )
+        val imagePlaceable =
+            measurables[0].measure(
+                Constraints.fixed(
+                    imageWidth,
+                    imageWidth
+                )
+            )
+        
+        val imageY =
+            lerp(
+                constraints.maxHeight.toDp().div(8f),
+                0.dp,
+                collapseFraction
+            ).roundToPx()
+        val imageX = androidx.compose.ui.util.lerp(
+            (constraints.maxWidth - imageWidth) / 2, // centered when expanded
+            0, // right aligned when collapsed
+            collapseFraction
+        )
+        layout(
+            width = constraints.maxWidth,
+            height = imageY + imageWidth
+        ) {
+            imagePlaceable.placeRelative(
+                imageX,
+                imageY
+            )
+        }
     }
 }
 
