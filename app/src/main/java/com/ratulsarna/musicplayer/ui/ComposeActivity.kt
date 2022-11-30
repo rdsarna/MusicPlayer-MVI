@@ -75,6 +75,7 @@ class ComposeActivity : DaggerAppCompatActivity() {
     }
 }
 
+private val HeaderHeight = 100.dp
 private val ExpandedImageSize = 300.dp
 private val CollapsedImageSize = 80.dp
 
@@ -127,6 +128,7 @@ fun MusicPlayerScreen(
     val navigationBarHeight = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
+    val bottomSheetProgressFractionProvider = remember { { scaffoldState.currentFraction } }
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(
@@ -171,7 +173,7 @@ fun MusicPlayerScreen(
                     modifier = Modifier
                         .fillMaxSize(),
                     content = {
-                        items(musicPlayerViewState.playlist) { playlistSong ->
+                        items(musicPlayerViewState.playlist, key = { it.id }) { playlistSong ->
                             Row(
                                 modifier = Modifier.padding(
                                     horizontal = 32.dp,
@@ -218,9 +220,8 @@ fun MusicPlayerScreen(
             modifier = modifier
                 .fillMaxSize(),
             state = musicPlayerViewState,
-            statusBarHeight = statusBarHeight,
             navigationBarHeight = navigationBarHeight,
-            bottomSheetProgressFractionProvider = { scaffoldState.currentFraction },
+            bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
             sendUiEvent = {
                 eventChannel.trySend(it)
             }
@@ -239,15 +240,24 @@ fun NavigationBarPaddingBox(
     )
 }
 
+class ControlEventsProvider(sendUiEvent: (MusicPlayerEvent) -> Unit) {
+    val onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) }
+    val onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) }
+    val onNext = { sendUiEvent(MusicPlayerEvent.NextSongEvent) }
+    val onPrevious = { sendUiEvent(MusicPlayerEvent.PreviousSongEvent) }
+    val onSeekForward = { sendUiEvent(MusicPlayerEvent.SeekForwardEvent) }
+    val onSeekBackward = { sendUiEvent(MusicPlayerEvent.SeekBackwardEvent) }
+}
+
 @Composable
 fun MusicPlayerScreenContent(
     modifier: Modifier = Modifier,
     state: MusicPlayerViewState,
-    statusBarHeight: Dp = 0.dp,
     navigationBarHeight: Dp = 0.dp,
     bottomSheetProgressFractionProvider: () -> Float = { 1f },
     sendUiEvent: (MusicPlayerEvent) -> Unit,
 ) {
+    val controlEventsProvider = remember { ControlEventsProvider(sendUiEvent) }
     Box(modifier = modifier) {
         Column(
             modifier = Modifier
@@ -325,12 +335,7 @@ fun MusicPlayerScreenContent(
                         )
                     ),
                 showPlayButton = state.playing.not(),
-                onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) },
-                onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) },
-                onNext = { sendUiEvent(MusicPlayerEvent.NextSongEvent) },
-                onPrevious = { sendUiEvent(MusicPlayerEvent.PreviousSongEvent) },
-                onSeekForward = { sendUiEvent(MusicPlayerEvent.SeekForwardEvent) },
-                onSeekBackward = { sendUiEvent(MusicPlayerEvent.SeekBackwardEvent) },
+                controlEventsProvider,
             )
             Spacer(modifier = Modifier.height(32.dp))
             Box(
@@ -339,14 +344,97 @@ fun MusicPlayerScreenContent(
                     .fillMaxWidth()
             )
         }
+        TopSlidingInHeader(
+            modifier = Modifier
+                .statusBarsPadding(),
+            controlEventsProvider = controlEventsProvider,
+            showPlayButton = state.playing.not(),
+            bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
+        )
+    }
+}
+
+@Composable
+fun TopSlidingInHeader(
+    modifier: Modifier = Modifier,
+    controlEventsProvider: ControlEventsProvider,
+    bottomSheetProgressFractionProvider: () -> Float = { 1f },
+    showPlayButton: Boolean,
+) {
+    SlidingHeaderLayout(
+        modifier = modifier,
+        bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .height(100.dp)
+        ) {
+            Controls(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center),
+                showPlayButton = showPlayButton,
+                controlEventsProvider = controlEventsProvider,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SlidingHeaderLayout(
+    bottomSheetProgressFractionProvider: () -> Float,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Layout(
+        modifier = modifier,
+        content = content
+    ) { measurables, constraints ->
+        check(measurables.size == 1)
+
+        val collapseFraction = bottomSheetProgressFractionProvider()
+
+        val headerWidth = min(
+            constraints.maxWidth - CollapsedImageSize.roundToPx(),
+            constraints.maxWidth
+        )
+        val headerHeight = min(
+            HeaderHeight.roundToPx(),
+            constraints.maxHeight
+        )
+        val imagePlaceable =
+            measurables[0].measure(
+                Constraints.fixed(
+                    headerWidth,
+                    headerHeight
+                )
+            )
+
+        val headerY = 0
+        val headerX = androidx.compose.ui.util.lerp(
+            constraints.maxWidth + 100,
+            CollapsedImageSize.roundToPx(),
+            collapseFraction
+        )
+        layout(
+            width = headerWidth,
+            height = headerHeight
+        ) {
+            imagePlaceable.placeRelative(
+                headerX,
+                headerY
+            )
+        }
     }
 }
 
 @Composable
 fun AlbumArt(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     @DrawableRes albumRes: Int,
-    bottomSheetProgressFractionProvider: () -> Float
+    bottomSheetProgressFractionProvider: () -> Float = { 1f },
 ) {
     CollapsingImageLayout(
         modifier = modifier,
@@ -364,7 +452,7 @@ fun AlbumArt(
 
 @Composable
 private fun CollapsingImageLayout(
-    bottomSheetProgressFractionProvider: () -> Float,
+    bottomSheetProgressFractionProvider: () -> Float = { 1f },
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -399,10 +487,11 @@ private fun CollapsingImageLayout(
                     imageWidth
                 )
             )
-        
+
         val imageY =
             lerp(
-                constraints.maxHeight.toDp().div(8f),
+                constraints.maxHeight.toDp()
+                    .div(8f),
                 0.dp,
                 collapseFraction
             ).roundToPx()
@@ -499,12 +588,7 @@ fun TimeStampText(text: String, modifier: Modifier = Modifier) {
 fun Controls(
     modifier: Modifier = Modifier,
     showPlayButton: Boolean,
-    onPlay: () -> Unit,
-    onPause: () -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit,
-    onSeekForward: () -> Unit,
-    onSeekBackward: () -> Unit,
+    controlEventsProvider: ControlEventsProvider,
 ) {
     Row(
         modifier = modifier,
@@ -512,13 +596,13 @@ fun Controls(
     ) {
         ControlImage(
             id = R.drawable.ic_seek_backward,
-            onClick = { onSeekBackward() },
+            onClick = controlEventsProvider.onSeekBackward,
             contentScale = ContentScale.Inside
         )
         ControlImage(
             modifier = Modifier.padding(end = 8.dp),
             id = R.drawable.ic_previous,
-            onClick = { onPrevious() },
+            onClick = controlEventsProvider.onPrevious,
             contentScale = ContentScale.Inside
         )
         Box {
@@ -529,7 +613,7 @@ fun Controls(
             ) {
                 ControlImage(
                     id = R.drawable.ic_play,
-                    onClick = { onPlay() },
+                    onClick = controlEventsProvider.onPlay,
                     contentScale = ContentScale.Fit
                 )
             }
@@ -540,7 +624,7 @@ fun Controls(
             ) {
                 ControlImage(
                     id = R.drawable.ic_pause,
-                    onClick = { onPause() },
+                    onClick = controlEventsProvider.onPause,
                     contentScale = ContentScale.Fit
                 )
             }
@@ -548,12 +632,12 @@ fun Controls(
         ControlImage(
             modifier = Modifier.padding(start = 8.dp),
             id = R.drawable.ic_next,
-            onClick = { onNext() },
+            onClick = controlEventsProvider.onNext,
             contentScale = ContentScale.Inside
         )
         ControlImage(
             id = R.drawable.ic_seek_forward,
-            onClick = { onSeekForward() },
+            onClick = controlEventsProvider.onSeekForward,
             contentScale = ContentScale.Inside
         )
     }
