@@ -39,6 +39,7 @@ import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayDarkerTransparent
 import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayTransparent
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetState
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,23 +61,19 @@ fun PlaylistBottomSheetContent(
             .background(LightGrayTransparent)
             .padding(bottom = navigationBarHeight)
     ) {
-        Text(
+        BottomSheetHeader(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    if (sheetState.isCollapsed) {
-                        scope.launch { sheetState.expand() }
-                    } else {
-                        scope.launch { sheetState.collapse() }
-                    }
-                },
-            text = "Up Next",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.White
+                .fillMaxWidth(),
+            sheetState = sheetState,
+            scope = scope,
+            onClick = {
+                if (sheetState.isCollapsed) {
+                    scope.launch { sheetState.expand() }
+                } else {
+                    scope.launch { sheetState.collapse() }
+                }
+            }
         )
         Spacer(
             modifier = Modifier
@@ -94,6 +91,27 @@ fun PlaylistBottomSheetContent(
 }
 
 @Composable
+private fun BottomSheetHeader(
+    modifier: Modifier = Modifier,
+    sheetState: BottomSheetState,
+    scope: CoroutineScope,
+    onClick: () -> Unit
+) {
+    Text(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                onClick()
+            },
+        text = "Up Next",
+        style = MaterialTheme.typography.titleMedium,
+        color = Color.White
+    )
+}
+
+@Composable
 fun Playlist(
     modifier: Modifier = Modifier,
     playlist: ImmutableList<PlaylistViewSong>,
@@ -107,54 +125,69 @@ fun Playlist(
                 playlist,
                 key = { it.id }
             ) { playlistSong ->
-                val backgroundColor: Color by animateColorAsState(
-                    targetValue = if (playlistSong.id == currentSong?.id) {
-                        LightGrayDarkerTransparent
-                    } else {
-                        Color.Transparent
-                    },
-                    animationSpec = tween(450)
+                PlaylistSongItem(
+                    modifier = Modifier.padding(
+                        horizontal = 32.dp,
+                        vertical = 16.dp
+                    ),
+                    playlistSong = playlistSong,
+                    currentSong = currentSong,
+                    sendUiEvent = sendUiEvent
                 )
-                Row(
-                    modifier = Modifier
-                        .clickable {
-                            sendUiEvent(MusicPlayerEvent.NewSongEvent(playlistSong.id))
-                        }
-                        .drawBehind {
-                            drawRect(backgroundColor)
-                        }
-                        .padding(
-                            horizontal = 32.dp,
-                            vertical = 16.dp
-                        )
-                ) {
-                    Image(
-                        modifier = Modifier
-                            .height(48.dp)
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(6.dp)),
-                        painter = painterResource(id = playlistSong.albumArt),
-                        contentDescription = ""
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.CenterVertically),
-                    ) {
-                        Text(
-                            text = playlistSong.title,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White
-                        )
-                        Text(
-                            text = playlistSong.infoLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
-                    }
-                }
             }
         }
     )
+}
+
+@Composable
+private fun PlaylistSongItem(
+    modifier: Modifier = Modifier,
+    playlistSong: PlaylistViewSong,
+    currentSong: PlaylistViewSong?,
+    sendUiEvent: (MusicPlayerEvent) -> Unit
+) {
+    val backgroundColor: Color by animateColorAsState(
+        targetValue = if (playlistSong.id == currentSong?.id) {
+            LightGrayDarkerTransparent
+        } else {
+            Color.Transparent
+        },
+        animationSpec = tween(450)
+    )
+    Row(
+        modifier = Modifier
+            .clickable {
+                sendUiEvent(MusicPlayerEvent.NewSongEvent(playlistSong.id))
+            }
+            .drawBehind {
+                drawRect(backgroundColor)
+            }
+            .then(modifier)
+    ) {
+        Image(
+            modifier = Modifier
+                .height(48.dp)
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(6.dp)),
+            painter = painterResource(id = playlistSong.albumArt),
+            contentDescription = ""
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterVertically),
+        ) {
+            Text(
+                text = playlistSong.title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White
+            )
+            Text(
+                text = playlistSong.infoLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White
+            )
+        }
+    }
 }

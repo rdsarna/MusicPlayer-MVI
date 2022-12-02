@@ -79,10 +79,6 @@ class ComposeActivity : DaggerAppCompatActivity() {
     }
 }
 
-private val HeaderHeight = 100.dp
-private val ExpandedImageSize = 300.dp
-private val CollapsedImageSize = 80.dp
-
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun MusicPlayerScreen(
@@ -121,7 +117,7 @@ fun MusicPlayerScreen(
         eventChannel
     )
 
-    val sheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
+    val sheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Expanded)
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = sheetState
     )
@@ -152,8 +148,7 @@ fun MusicPlayerScreen(
         sheetPeekHeight = 48.dp + navigationBarHeight
     ) {
         MusicPlayerScreenContent(
-            modifier = modifier
-                .fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             state = musicPlayerViewState,
             statusBarHeight = statusBarHeight,
             navigationBarHeight = navigationBarHeight,
@@ -163,14 +158,6 @@ fun MusicPlayerScreen(
     }
 }
 
-class ControlEventsProvider(sendUiEvent: (MusicPlayerEvent) -> Unit) {
-    val onPlay = { sendUiEvent(MusicPlayerEvent.PlayEvent) }
-    val onPause = { sendUiEvent(MusicPlayerEvent.PauseEvent) }
-    val onNext = { sendUiEvent(MusicPlayerEvent.NextSongEvent) }
-    val onPrevious = { sendUiEvent(MusicPlayerEvent.PreviousSongEvent) }
-    val onSeekForward = { sendUiEvent(MusicPlayerEvent.SeekForwardEvent) }
-    val onSeekBackward = { sendUiEvent(MusicPlayerEvent.SeekBackwardEvent) }
-}
 
 @Composable
 fun MusicPlayerScreenContent(
@@ -203,27 +190,23 @@ fun MusicPlayerScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
+            AlbumArt(
                 modifier = Modifier
                     .fillMaxHeight(.55f)
                     .fillMaxWidth()
-            ) {
-                AlbumArt(
-                    modifier = Modifier
-                        .padding(
-                            horizontal = 16.dp,
-                        )
-                        .padding(
-                            bottom = 8.dp,
-                            top = 8.dp + statusBarHeight
-                        ),
-                    albumRes = state.albumArt,
-                    bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
-                )
-            }
+                    .padding(
+                        horizontal = 16.dp,
+                    )
+                    .padding(
+                        bottom = 8.dp,
+                        top = 8.dp + statusBarHeight
+                    ),
+                albumRes = state.albumArt,
+                bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
+            )
             Spacer(modifier = Modifier.height(32.dp))
             SongTitle(
-                modifier = Modifier .graphicsLayer {
+                modifier = Modifier.graphicsLayer {
                     alpha = max(
                         0f,
                         1f - bottomSheetProgressFractionProvider() * 2
@@ -313,53 +296,7 @@ fun TopSlidingInHeader(
     }
 }
 
-@Composable
-private fun SlidingHeaderLayout(
-    bottomSheetProgressFractionProvider: () -> Float,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Layout(
-        modifier = modifier,
-        content = content
-    ) { measurables, constraints ->
-        check(measurables.size == 1)
 
-        val collapseFraction = bottomSheetProgressFractionProvider()
-
-        val headerWidth = min(
-            constraints.maxWidth - CollapsedImageSize.roundToPx(),
-            constraints.maxWidth
-        )
-        val headerHeight = min(
-            HeaderHeight.roundToPx(),
-            constraints.maxHeight
-        )
-        val imagePlaceable =
-            measurables[0].measure(
-                Constraints.fixed(
-                    headerWidth,
-                    headerHeight
-                )
-            )
-
-        val headerY = 0
-        val headerX = androidx.compose.ui.util.lerp(
-            constraints.maxWidth + 100,
-            CollapsedImageSize.roundToPx(),
-            collapseFraction
-        )
-        layout(
-            width = headerWidth,
-            height = headerHeight
-        ) {
-            imagePlaceable.placeRelative(
-                headerX,
-                headerY
-            )
-        }
-    }
-}
 
 @Composable
 fun AlbumArt(
@@ -367,77 +304,18 @@ fun AlbumArt(
     albumRes: Int,
     bottomSheetProgressFractionProvider: () -> Float = { 1f },
 ) {
-    CollapsingImageLayout(
-        modifier = modifier,
-        bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
+    Box(
+        modifier = modifier
     ) {
-        Image(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp)),
-            painter = painterResource(id = albumRes),
-            contentDescription = "",
-        )
-    }
-}
-
-@Composable
-private fun CollapsingImageLayout(
-    modifier: Modifier = Modifier,
-    bottomSheetProgressFractionProvider: () -> Float = { 1f },
-    content: @Composable () -> Unit
-) {
-    Layout(
-        modifier = modifier,
-        content = content
-    ) { measurables, constraints ->
-        check(measurables.size == 1)
-
-        val collapseFraction = bottomSheetProgressFractionProvider()
-
-        val imageMaxSize =
-            min(
-                ExpandedImageSize.roundToPx(),
-                constraints.maxWidth
-            )
-        val imageMinSize =
-            max(
-                CollapsedImageSize.roundToPx(),
-                constraints.minWidth
-            )
-        val imageWidth =
-            androidx.compose.ui.util.lerp(
-                imageMaxSize,
-                imageMinSize,
-                collapseFraction
-            )
-        val imagePlaceable =
-            measurables[0].measure(
-                Constraints.fixed(
-                    imageWidth,
-                    imageWidth
-                )
-            )
-
-        val imageY =
-            lerp(
-                constraints.maxHeight.toDp()
-                    .div(8f),
-                0.dp,
-                collapseFraction
-            ).roundToPx()
-        val imageX = androidx.compose.ui.util.lerp(
-            (constraints.maxWidth - imageWidth) / 2, // centered when expanded
-            0, // right aligned when collapsed
-            collapseFraction
-        )
-        layout(
-            width = constraints.maxWidth,
-            height = imageY + imageWidth
+        CollapsingImageLayout(
+            bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
         ) {
-            imagePlaceable.placeRelative(
-                imageX,
-                imageY
+            Image(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp)),
+                painter = painterResource(id = albumRes),
+                contentDescription = "",
             )
         }
     }
@@ -462,7 +340,6 @@ fun SongTitle(modifier: Modifier = Modifier, title: String, subTitle: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongSeekBar(
     modifier: Modifier = Modifier,
