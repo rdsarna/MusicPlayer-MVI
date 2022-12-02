@@ -1,5 +1,6 @@
 package com.ratulsarna.musicplayer.ui
 
+import androidx.compose.runtime.Immutable
 import com.ratulsarna.musicplayer.repository.model.Song
 import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 

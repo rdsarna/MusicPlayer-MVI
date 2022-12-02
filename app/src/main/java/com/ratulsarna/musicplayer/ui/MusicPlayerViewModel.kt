@@ -13,6 +13,7 @@ import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
 import com.ratulsarna.musicplayer.utils.interval
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -103,7 +104,7 @@ class MusicPlayerViewModel @Inject constructor(
     private fun Flow<MusicPlayerResult>.resultToViewState(): Flow<MusicPlayerViewState> {
         return scan(MusicPlayerViewState.INITIAL) { vs, result ->
             when (result) {
-                is UiCreateResult -> vs.copy(playlist = result.playlist)
+                is UiCreateResult -> vs.copy(playlist = result.playlist.toImmutableList())
                 is UiStartResult -> result.song?.let { song ->
                     vs.copy(
                         loading = false,
@@ -263,8 +264,12 @@ class MusicPlayerViewModel @Inject constructor(
         flow.map { CurrentPositionResult(it.position) }
 
     private fun onNewSong(flow: Flow<NewSongEvent>): Flow<NewSongResult> =
-        flow.map {
-            upNextSongsController.newSong(it.songId)
+        flow.mapNotNull {
+            if  (it.songId != viewState.value.currentPlaylistSong?.id) {
+                upNextSongsController.newSong(it.songId)
+            } else {
+                null
+            }
         }.newSongResultFromSong()
 
     private fun Flow<Song?>.newSongResultFromSong(): Flow<NewSongResult> =

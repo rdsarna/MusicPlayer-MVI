@@ -3,7 +3,7 @@
     ExperimentalMaterial3Api::class,
 )
 
-package com.ratulsarna.musicplayer.ui
+package com.ratulsarna.musicplayer.ui.compose
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -12,8 +12,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,9 +25,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Devices
@@ -41,12 +39,18 @@ import androidx.compose.ui.unit.lerp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
 import com.ratulsarna.musicplayer.R
+import com.ratulsarna.musicplayer.ui.LifecycleEvents
+import com.ratulsarna.musicplayer.ui.MusicPlayerEvent
+import com.ratulsarna.musicplayer.ui.MusicPlayerViewModel
+import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
+import com.ratulsarna.musicplayer.ui.ViewEffects
+import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
+import com.ratulsarna.musicplayer.ui.setupEventChannel
 import com.ratulsarna.musicplayer.ui.ui.theme.*
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import fr.swarmlab.beta.ui.screens.components.material3.*
-import kotlinx.coroutines.launch
-import timber.log.Timber
+import kotlinx.collections.immutable.ImmutableList
 import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
@@ -121,14 +125,12 @@ fun MusicPlayerScreen(
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = sheetState
     )
-    val scope = rememberCoroutineScope()
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
         .calculateTopPadding()
     val navigationBarHeight = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
-    val bottomSheetProgressFractionProvider = remember { { scaffoldState.currentFraction } }
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(
@@ -136,108 +138,29 @@ fun MusicPlayerScreen(
             topEnd = 16.dp
         ),
         sheetContent = {
-            Column(
-                modifier = Modifier
-                    .height(
-                        LocalConfiguration.current.screenHeightDp.dp + statusBarHeight - 100.dp
-                    )
-                    .background(LightGrayTransparent)
-                    .navigationBarsPadding()
-            ) {
-                Text(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (sheetState.isCollapsed) {
-                                scope.launch { sheetState.expand() }
-                            } else {
-                                scope.launch { sheetState.collapse() }
-                            }
-                        },
-                    text = "Up Next",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
-                NavigationBarPaddingBox(
-                    modifier = Modifier
-                        .height(navigationBarHeight)
-                        .fillMaxWidth()
-                        .background(Color.Black),
-                    scaffoldState.currentFraction
-                )
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    content = {
-                        items(musicPlayerViewState.playlist, key = { it.id }) { playlistSong ->
-                            Row(
-                                modifier = Modifier.padding(
-                                    horizontal = 32.dp,
-                                    vertical = 16.dp
-                                )
-                            ) {
-                                Image(
-                                    modifier = Modifier
-                                        .height(48.dp)
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(6.dp)),
-                                    painter = painterResource(id = playlistSong.albumArt),
-                                    contentDescription = ""
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .align(Alignment.CenterVertically),
-                                ) {
-                                    Text(
-                                        text = playlistSong.title,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        text = playlistSong.infoLabel,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                        }
-                    }
-                )
-            }
+            PlaylistBottomSheetContent(
+                statusBarHeight = statusBarHeight,
+                navigationBarHeight = navigationBarHeight,
+                sheetState = sheetState,
+                playlist = musicPlayerViewState.playlist,
+                currentSong = musicPlayerViewState.currentPlaylistSong,
+                bottomSheetProgressFractionProvider = { scaffoldState.currentFraction },
+                sendUiEvent = { eventChannel.trySend(it) }
+            )
         },
         sheetBackgroundColor = Color.Transparent,
-        sheetPeekHeight = 48.dp + WindowInsets.navigationBars
-            .asPaddingValues()
-            .calculateBottomPadding()
+        sheetPeekHeight = 48.dp + navigationBarHeight
     ) {
         MusicPlayerScreenContent(
             modifier = modifier
                 .fillMaxSize(),
             state = musicPlayerViewState,
+            statusBarHeight = statusBarHeight,
             navigationBarHeight = navigationBarHeight,
-            bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
-            sendUiEvent = {
-                eventChannel.trySend(it)
-            }
+            bottomSheetProgressFractionProvider = { scaffoldState.currentFraction },
+            sendUiEvent = { eventChannel.trySend(it) }
         )
     }
-}
-
-@Composable
-fun NavigationBarPaddingBox(
-    modifier: Modifier = Modifier,
-    bottomSheetProgressFraction: Float = 1f
-) {
-    Box(
-        modifier = modifier
-            .alpha(1f - bottomSheetProgressFraction)
-    )
 }
 
 class ControlEventsProvider(sendUiEvent: (MusicPlayerEvent) -> Unit) {
@@ -253,6 +176,7 @@ class ControlEventsProvider(sendUiEvent: (MusicPlayerEvent) -> Unit) {
 fun MusicPlayerScreenContent(
     modifier: Modifier = Modifier,
     state: MusicPlayerViewState,
+    statusBarHeight: Dp = 0.dp,
     navigationBarHeight: Dp = 0.dp,
     bottomSheetProgressFractionProvider: () -> Float = { 1f },
     sendUiEvent: (MusicPlayerEvent) -> Unit,
@@ -279,24 +203,32 @@ fun MusicPlayerScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            AlbumArt(
+            Box(
                 modifier = Modifier
-                    .padding(
-                        horizontal = 16.dp,
-                        vertical = 8.dp
-                    )
-                    .statusBarsPadding(),
-                albumRes = state.albumArt,
-                bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
-            )
+                    .fillMaxHeight(.55f)
+                    .fillMaxWidth()
+            ) {
+                AlbumArt(
+                    modifier = Modifier
+                        .padding(
+                            horizontal = 16.dp,
+                        )
+                        .padding(
+                            bottom = 8.dp,
+                            top = 8.dp + statusBarHeight
+                        ),
+                    albumRes = state.albumArt,
+                    bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
+                )
+            }
             Spacer(modifier = Modifier.height(32.dp))
             SongTitle(
-                modifier = Modifier.alpha(
-                    max(
+                modifier = Modifier .graphicsLayer {
+                    alpha = max(
                         0f,
                         1f - bottomSheetProgressFractionProvider() * 2
                     )
-                ),
+                },
                 title = state.songTitle,
                 subTitle = state.songInfoLabel
             )
@@ -305,12 +237,12 @@ fun MusicPlayerScreenContent(
                 modifier = Modifier
                     .wrapContentHeight()
                     .fillMaxWidth()
-                    .alpha(
-                        max(
+                    .graphicsLayer {
+                        alpha = max(
                             0f,
                             1f - bottomSheetProgressFractionProvider() * 2
                         )
-                    ),
+                    },
                 currentTimeLabel = state.elapsedTime.getTimeLabel(),
                 totalDurationTimeLabel = state.totalDuration.toInt()
                     .getTimeLabel(),
@@ -328,12 +260,12 @@ fun MusicPlayerScreenContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
-                    .alpha(
-                        max(
+                    .graphicsLayer {
+                        alpha = max(
                             0f,
                             1f - bottomSheetProgressFractionProvider() * 2
                         )
-                    ),
+                    },
                 showPlayButton = state.playing.not(),
                 controlEventsProvider,
             )
@@ -345,8 +277,7 @@ fun MusicPlayerScreenContent(
             )
         }
         TopSlidingInHeader(
-            modifier = Modifier
-                .statusBarsPadding(),
+            modifier = Modifier.padding(top = statusBarHeight),
             controlEventsProvider = controlEventsProvider,
             showPlayButton = state.playing.not(),
             bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
@@ -433,7 +364,7 @@ private fun SlidingHeaderLayout(
 @Composable
 fun AlbumArt(
     modifier: Modifier = Modifier,
-    @DrawableRes albumRes: Int,
+    albumRes: Int,
     bottomSheetProgressFractionProvider: () -> Float = { 1f },
 ) {
     CollapsingImageLayout(
@@ -441,19 +372,19 @@ fun AlbumArt(
         bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
     ) {
         Image(
-            painter = painterResource(id = albumRes),
-            contentDescription = "",
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp)),
+            painter = painterResource(id = albumRes),
+            contentDescription = "",
         )
     }
 }
 
 @Composable
 private fun CollapsingImageLayout(
-    bottomSheetProgressFractionProvider: () -> Float = { 1f },
     modifier: Modifier = Modifier,
+    bottomSheetProgressFractionProvider: () -> Float = { 1f },
     content: @Composable () -> Unit
 ) {
     Layout(

@@ -15,3 +15,4 @@ val MidBlue = Color(0xFF4169E1)
 val TopBlue = Color(0xFF1E90FF)
 
 val LightGrayTransparent = Color(0x50000000)
+val LightGrayDarkerTransparent = Color(0x80000000)

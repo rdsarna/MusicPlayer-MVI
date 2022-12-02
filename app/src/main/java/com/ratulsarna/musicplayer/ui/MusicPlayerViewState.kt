@@ -4,6 +4,9 @@ import androidx.annotation.DrawableRes
 import androidx.lifecycle.LiveData
 import com.ratulsarna.musicplayer.R
 import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.immutableListOf
+import kotlinx.collections.immutable.persistentListOf
 
 data class MusicPlayerViewState(
     val loading: Boolean,
@@ -14,7 +17,7 @@ data class MusicPlayerViewState(
     val totalDuration: Float,
     val elapsedTime: Int,
     val currentPlaylistSong: PlaylistViewSong?,
-    val playlist: List<PlaylistViewSong>,
+    val playlist: ImmutableList<PlaylistViewSong>,
 ) {
     companion object {
         val INITIAL = MusicPlayerViewState(
@@ -26,7 +29,7 @@ data class MusicPlayerViewState(
             totalDuration = 1f,
             elapsedTime = 0,
             currentPlaylistSong = null,
-            playlist = emptyList(),
+            playlist = persistentListOf(),
         )
     }
 }
