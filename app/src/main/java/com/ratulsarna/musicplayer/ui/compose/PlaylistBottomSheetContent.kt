@@ -65,8 +65,6 @@ fun PlaylistBottomSheetContent(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            sheetState = sheetState,
-            scope = scope,
             onClick = {
                 if (sheetState.isCollapsed) {
                     scope.launch { sheetState.expand() }
@@ -93,8 +91,6 @@ fun PlaylistBottomSheetContent(
 @Composable
 private fun BottomSheetHeader(
     modifier: Modifier = Modifier,
-    sheetState: BottomSheetState,
-    scope: CoroutineScope,
     onClick: () -> Unit
 ) {
     Text(

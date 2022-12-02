@@ -12,6 +12,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -117,7 +118,7 @@ fun MusicPlayerScreen(
         eventChannel
     )
 
-    val sheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Expanded)
+    val sheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = sheetState
     )
