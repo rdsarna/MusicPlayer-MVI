@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -39,8 +40,8 @@ import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayDarkerTransparent
 import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayTransparent
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetState
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun PlaylistBottomSheetContent(
@@ -56,10 +57,9 @@ fun PlaylistBottomSheetContent(
     Column(
         modifier = Modifier
             .height(
-                LocalConfiguration.current.screenHeightDp.dp + statusBarHeight - 100.dp
+                LocalConfiguration.current.screenHeightDp.dp + navigationBarHeight - 100.dp
             )
             .background(LightGrayTransparent)
-            .padding(bottom = navigationBarHeight)
     ) {
         BottomSheetHeader(
             modifier = Modifier
@@ -83,7 +83,8 @@ fun PlaylistBottomSheetContent(
                 .fillMaxSize(),
             playlist = playlist,
             currentSong = currentSong,
-            sendUiEvent = sendUiEvent
+            sendUiEvent = sendUiEvent,
+            navigationBarHeight = navigationBarHeight,
         )
     }
 }
@@ -113,9 +114,11 @@ fun Playlist(
     playlist: ImmutableList<PlaylistViewSong>,
     currentSong: PlaylistViewSong?,
     sendUiEvent: (MusicPlayerEvent) -> Unit,
+    navigationBarHeight: Dp,
 ) {
     LazyColumn(
         modifier = modifier,
+        contentPadding = PaddingValues(bottom = navigationBarHeight),
         content = {
             items(
                 playlist,

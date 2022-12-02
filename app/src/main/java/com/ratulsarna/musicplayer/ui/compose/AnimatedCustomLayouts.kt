@@ -6,6 +6,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import timber.log.Timber
 import kotlin.math.max
 import kotlin.math.min
 
@@ -82,7 +83,7 @@ fun CollapsingImageLayout(
                 constraints.minWidth
             )
         val imageWidth =
-            androidx.compose.ui.util.lerp(
+            lerp(
                 imageMaxSize,
                 imageMinSize,
                 collapseFraction
@@ -97,13 +98,12 @@ fun CollapsingImageLayout(
 
         val imageY =
             androidx.compose.ui.unit.lerp(
-                constraints.maxHeight.toDp()
-                    .div(8f),
+                constraints.maxHeight.toDp() - 300.dp,
                 0.dp,
                 collapseFraction
             )
                 .roundToPx()
-        val imageX = androidx.compose.ui.util.lerp(
+        val imageX = lerp(
             (constraints.maxWidth - imageWidth) / 2, // centered when expanded
             0, // right aligned when collapsed
             collapseFraction
