@@ -1,7 +1,7 @@
 package com.ratulsarna.musicplayer
 
-import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerControllerMock
-import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerControllerMock.Companion.TEST_SONG_DURATION
+import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
+import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock.Companion.TEST_SONG_DURATION
 import org.junit.Test
 import kotlin.test.assertEquals
 

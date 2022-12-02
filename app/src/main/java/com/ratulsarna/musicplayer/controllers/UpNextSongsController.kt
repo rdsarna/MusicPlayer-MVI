@@ -1,4 +1,4 @@
-package com.ratulsarna.musicplayer.ui.controllers
+package com.ratulsarna.musicplayer.controllers
 
 import com.ratulsarna.musicplayer.repository.model.Playlist
 import com.ratulsarna.musicplayer.repository.PlaylistsRepository

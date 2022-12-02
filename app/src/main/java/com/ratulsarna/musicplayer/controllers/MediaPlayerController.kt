@@ -1,4 +1,4 @@
-package com.ratulsarna.musicplayer.ui.controllers
+package com.ratulsarna.musicplayer.controllers
 
 import android.media.MediaPlayer
 import com.ratulsarna.musicplayer.repository.model.Song

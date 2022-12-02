@@ -7,8 +7,8 @@ import com.ratulsarna.musicplayer.repository.model.Song
 import com.ratulsarna.musicplayer.ui.MusicPlayerEffect.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerResult.*
-import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerController
-import com.ratulsarna.musicplayer.ui.controllers.UpNextSongsController
+import com.ratulsarna.musicplayer.controllers.MediaPlayerController
+import com.ratulsarna.musicplayer.controllers.UpNextSongsController
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION

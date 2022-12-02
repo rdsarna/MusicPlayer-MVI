@@ -9,9 +9,9 @@ import com.ratulsarna.musicplayer.ui.MusicPlayerEffect.ShowErrorEffect
 import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewModel
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
-import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerCommand
-import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerControllerMock
-import com.ratulsarna.musicplayer.ui.controllers.UpNextSongsController
+import com.ratulsarna.musicplayer.controllers.MediaPlayerCommand
+import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
+import com.ratulsarna.musicplayer.controllers.UpNextSongsController
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.SchedulerProviderTrampoline
 import org.junit.Before

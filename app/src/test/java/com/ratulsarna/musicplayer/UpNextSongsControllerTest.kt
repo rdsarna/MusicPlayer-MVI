@@ -4,7 +4,7 @@ import com.ratulsarna.musicplayer.repository.model.Playlist
 import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
 import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryMock
 import com.ratulsarna.musicplayer.repository.model.Song
-import com.ratulsarna.musicplayer.ui.controllers.UpNextSongsController
+import com.ratulsarna.musicplayer.controllers.UpNextSongsController
 import org.junit.Test
 
 import org.junit.Assert.*

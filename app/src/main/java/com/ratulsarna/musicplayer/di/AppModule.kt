@@ -6,8 +6,8 @@ import com.ratulsarna.musicplayer.repository.PlaylistsRepository
 import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryDefault
 import com.ratulsarna.musicplayer.repository.SongsRepository
 import com.ratulsarna.musicplayer.repository.SongsRepositoryDefault
-import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerController
-import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerControllerDefault
+import com.ratulsarna.musicplayer.controllers.MediaPlayerController
+import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerDefault
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.CoroutineContextProviderDefault
 import dagger.Module
