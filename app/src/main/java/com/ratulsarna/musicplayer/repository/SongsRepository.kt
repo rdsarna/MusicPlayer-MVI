@@ -12,9 +12,9 @@ interface SongsRepository {
 }
 
 class SongsRepositoryDefault @Inject constructor() : SongsRepository {
-
-    private val allSongs = listOf(
+    private val dummySongsList = listOf(
         Song(
+            0,
             "Levitating",
             "Dua Lipa feat. DaBaby",
             2020,
@@ -22,6 +22,7 @@ class SongsRepositoryDefault @Inject constructor() : SongsRepository {
             R.raw.dua_lipa_levitating,
         ),
         Song(
+            1,
             "Drinkee",
             "Sofi Tukker",
             2016,
@@ -29,6 +30,7 @@ class SongsRepositoryDefault @Inject constructor() : SongsRepository {
             R.raw.sofi_tukker_drinkee,
         ),
         Song(
+            2,
             "Fireflies",
             "Owl City",
             2009,
@@ -36,6 +38,7 @@ class SongsRepositoryDefault @Inject constructor() : SongsRepository {
             R.raw.owl_city_fireflies,
         ),
         Song(
+            3,
             "Despacito",
             "Luis Fonsi ft. Daddy Yankee",
             2017,
@@ -43,6 +46,11 @@ class SongsRepositoryDefault @Inject constructor() : SongsRepository {
             R.raw.luis_fonsi_despacito,
         )
     )
+    private val allSongs = mutableListOf<Song>().apply {
+        repeat(12) {
+            add(dummySongsList[it % dummySongsList.size].copy(id = it))
+        }
+    }
 
     override fun getSong(id: Int): Song? =
         allSongs.find { it.id == id }

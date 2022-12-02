@@ -9,11 +9,11 @@ import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerResult.*
 import com.ratulsarna.musicplayer.ui.controllers.MediaPlayerController
 import com.ratulsarna.musicplayer.ui.controllers.UpNextSongsController
-import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
 import com.ratulsarna.musicplayer.utils.interval
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -39,6 +39,7 @@ class MusicPlayerViewModel @Inject constructor(
     init {
         val initialVS = MusicPlayerViewState.INITIAL
         viewState = _eventFlow
+            .onEach { Timber.d("Event = $it") }
             .eventToResult()
             .onEach { Timber.d("Result = $it") }
             .resultToViewEffect()
@@ -103,7 +104,7 @@ class MusicPlayerViewModel @Inject constructor(
     private fun Flow<MusicPlayerResult>.resultToViewState(): Flow<MusicPlayerViewState> {
         return scan(MusicPlayerViewState.INITIAL) { vs, result ->
             when (result) {
-                is UiCreateResult -> vs.copy(upNextSongs = result.upNextSongList)
+                is UiCreateResult -> vs.copy(playlist = result.playlist.toImmutableList())
                 is UiStartResult -> result.song?.let { song ->
                     vs.copy(
                         loading = false,
@@ -112,23 +113,26 @@ class MusicPlayerViewModel @Inject constructor(
                         albumArt = song.albumArtResId,
                         totalDuration = result.duration.toFloat(),
                         playing = result.playing ?: vs.playing,
-                        nextSongLabel = "Up Next: ${result.nextSong?.title}",
+                        currentPlaylistSong = song.toPlaylistViewSong(),
                     )
                 } ?: vs
-                is NewSongResult -> result.song?.let { song ->
-                    vs.copy(
-                        loading = false,
-                        songTitle = song.title,
-                        songInfoLabel = "${song.artistName} | ${song.year}",
-                        albumArt = song.albumArtResId,
-                        nextSongLabel = "Up Next: ${result.nextSong?.title}",
-                        elapsedTime = 0,
-                        totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
-                        playing = result.playing,
-                        upNextSongs = result.upNextSongList
-                    )
-                } ?: vs
-                is SeekToResult -> vs.copy(elapsedTime = result.position)
+                is NewSongResult -> {
+                    result.song?.let { song ->
+                        vs.copy(
+                            loading = false,
+                            songTitle = song.title,
+                            songInfoLabel = "${song.artistName} | ${song.year}",
+                            albumArt = song.albumArtResId,
+                            elapsedTime = 0,
+                            totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
+                            playing = result.playing,
+                            currentPlaylistSong = song.toPlaylistViewSong(),
+                        )
+                    } ?: vs
+                }
+                is SeekToResult -> {
+                    vs.copy(elapsedTime = result.position)
+                }
                 UiStopResult -> vs
                 is PauseResult -> vs.copy(playing = result.playing)
                 is PlayResult -> vs.copy(playing = result.playing)
@@ -159,9 +163,6 @@ class MusicPlayerViewModel @Inject constructor(
         }
     }
 
-    private val upNextSongList: List<PlaylistViewSong>
-        get() = upNextSongsController.currentUpNextSongList().map { it.toPlaylistViewSong() }
-
     private fun onUiCreate(flow: Flow<UiCreateEvent>): Flow<UiCreateResult> =
         flow.map {
             UiCreateResult(
@@ -176,7 +177,6 @@ class MusicPlayerViewModel @Inject constructor(
                 emit(
                     UiStartResult(
                         upNextSongsController.currentSong(),
-                        upNextSongsController.peekNextSong(),
                         1,
                         playing = null,
                         errorLoadingSong = false,
@@ -202,7 +202,6 @@ class MusicPlayerViewModel @Inject constructor(
                 emit(
                     UiStartResult(
                         upNextSongsController.currentSong(),
-                        upNextSongsController.peekNextSong(),
                         duration,
                         playing = playing,
                         errorLoadingSong = !loadSuccess,
@@ -265,8 +264,12 @@ class MusicPlayerViewModel @Inject constructor(
         flow.map { CurrentPositionResult(it.position) }
 
     private fun onNewSong(flow: Flow<NewSongEvent>): Flow<NewSongResult> =
-        flow.map {
-            upNextSongsController.newSong(it.songId)
+        flow.mapNotNull {
+            if  (it.songId != viewState.value.currentPlaylistSong?.id) {
+                upNextSongsController.newSong(it.songId)
+            } else {
+                null
+            }
         }.newSongResultFromSong()
 
     private fun Flow<Song?>.newSongResultFromSong(): Flow<NewSongResult> =
@@ -274,9 +277,7 @@ class MusicPlayerViewModel @Inject constructor(
             emit(
                 NewSongResult(
                     song,
-                    upNextSongsController.peekNextSong(),
                     -1,
-                    upNextSongList,
                     playing = false,
                     errorLoading = false,
                 )
@@ -293,10 +294,8 @@ class MusicPlayerViewModel @Inject constructor(
             }
             emit(
                 NewSongResult(
-                    song,
-                    upNextSongsController.peekNextSong(),
-                    duration,
-                    upNextSongList,
+                    song = song,
+                    duration = duration,
                     playing = playing,
                     errorLoading = !loadSuccess
                 )

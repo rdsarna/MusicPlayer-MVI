@@ -17,14 +17,15 @@ import kotlinx.coroutines.isActive
 import java.util.concurrent.TimeUnit
 
 /**
- * For Actvities, allows declarations like
+ * For Activities, allows declarations like
  * ```
  * val myViewModel = viewModelProvider(myViewModelFactory)
  * ```
  */
 inline fun <reified VM : ViewModel> FragmentActivity.viewModelProvider(
     provider: ViewModelProvider.Factory
-) = ViewModelProvider(this, provider).get(VM::class.java)
+) =
+    ViewModelProvider(this, provider)[VM::class.java]
 
 /** Returns true if the calling thread is the main thread.  */
 fun isMainThread(): Boolean {

@@ -30,8 +30,8 @@
                 app:cardCornerRadius="@dimen/dimen_8"
                 app:cardElevation="6dp"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintDimensionRatio="1"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias=".25">
@@ -39,10 +39,10 @@
                 <ImageView
                     android:id="@+id/albumArt"
                     imageDrawableRes="@{viewState.albumArt}"
-                    android:src="@drawable/ic_launcher_background"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scaleType="fitXY" />
+                    android:scaleType="fitXY"
+                    android:src="@drawable/ic_launcher_background" />
 
             </androidx.cardview.widget.CardView>
 
@@ -75,9 +75,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintGuide_percent=".725"/>
+                app:layout_constraintGuide_percent=".725"
+                app:layout_constraintStart_toStartOf="parent" />
 
             <TextView
                 android:id="@+id/elapsedTime"
@@ -87,8 +87,8 @@
                 android:text="@{viewState.elapsedTimeLabel}"
                 android:textColor="@android:color/white"
                 android:translationY="@dimen/dimen_8"
-                app:layout_constraintTop_toBottomOf="@id/bottomControlsGuideline"
                 app:layout_constraintStart_toStartOf="@+id/seekBar"
+                app:layout_constraintTop_toBottomOf="@id/bottomControlsGuideline"
                 tools:text="1:21" />
 
             <TextView
@@ -99,38 +99,38 @@
                 android:text="@{viewState.totalDurationLabel}"
                 android:textColor="@android:color/white"
                 android:translationY="@dimen/dimen_8"
-                app:layout_constraintTop_toBottomOf="@id/bottomControlsGuideline"
                 app:layout_constraintEnd_toEndOf="@+id/seekBar"
+                app:layout_constraintTop_toBottomOf="@id/bottomControlsGuideline"
                 tools:text="4:22" />
 
             <com.google.android.material.slider.Slider
                 android:id="@+id/seekBar"
+                seekBarValueTo="@{viewState.totalDuration}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/dimen_8"
                 android:layout_marginEnd="@dimen/dimen_8"
                 android:value="@{viewState.elapsedTime}"
                 android:valueFrom="0"
-                seekBarValueTo="@{viewState.totalDuration}"
                 app:labelBehavior="gone"
                 app:layout_constraintTop_toBottomOf="@+id/elapsedTime"
-                bind:layout_constraintBottom_toTopOf="@+id/playButton"
                 app:thumbRadius="0dp"
                 app:trackColorActive="@android:color/white"
-                app:trackColorInactive="#82FFFFFF" />
+                app:trackColorInactive="#82FFFFFF"
+                bind:layout_constraintBottom_toTopOf="@+id/playButton" />
 
             <ImageView
                 android:id="@+id/playButton"
                 isVisible="@{!safeUnbox(viewState.playing)}"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="80dp"
                 android:layout_marginTop="@dimen/dimen_6"
+                android:layout_marginBottom="80dp"
                 android:background="?selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_play"
-                bind:layout_constraintTop_toBottomOf="@+id/seekBar"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent" />
+                app:layout_constraintStart_toStartOf="parent"
+                bind:layout_constraintTop_toBottomOf="@+id/seekBar" />
 
             <ImageView
                 android:id="@+id/pauseButton"

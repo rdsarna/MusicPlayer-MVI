@@ -76,7 +76,7 @@ class MusicPlayerViewModelTest {
         viewStateTester.assertValueAt(1) { vs ->
             assertEquals(
                 MusicPlayerViewState.INITIAL.copy(
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -121,7 +121,7 @@ class MusicPlayerViewModelTest {
                     albumArt = song.albumArt,
                     totalDuration = TEST_SONG_DURATION,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -155,7 +155,7 @@ class MusicPlayerViewModelTest {
                     totalDuration = TEST_SONG_DURATION,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -197,7 +197,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 5,
                     playing = false,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -240,7 +240,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 0,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[2].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -284,7 +284,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 0,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[0].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -328,7 +328,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 0,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[0].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -372,7 +372,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 0,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[2].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -416,7 +416,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 7000,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -457,7 +457,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 5000,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -496,7 +496,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = (TEST_SONG_DURATION/2).toInt(),
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -536,7 +536,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 7000,
                     playing = false,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -575,7 +575,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 5000,
                     playing = false,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -612,7 +612,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = (TEST_SONG_DURATION/2).toInt(),
                     playing = false,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -649,7 +649,7 @@ class MusicPlayerViewModelTest {
                     totalDuration = TEST_SONG_DURATION,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -687,7 +687,7 @@ class MusicPlayerViewModelTest {
                     totalDuration = TEST_SONG_DURATION,
                     playing = false,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -729,7 +729,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 10000,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -775,7 +775,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 10000,
                     playing = false,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -823,7 +823,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 0,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[0].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -847,7 +847,7 @@ class MusicPlayerViewModelTest {
         viewStateTester.assertValueAt(1) { vs ->
             assertEquals(
                 MusicPlayerViewState.INITIAL.copy(
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -873,7 +873,7 @@ class MusicPlayerViewModelTest {
         viewStateTester.assertValueAt(1) { vs ->
             assertEquals(
                 MusicPlayerViewState.INITIAL.copy(
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -906,7 +906,7 @@ class MusicPlayerViewModelTest {
                     albumArt = song.albumArt,
                     totalDuration = 1f,
                     nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs
@@ -931,7 +931,7 @@ class MusicPlayerViewModelTest {
                     elapsedTime = 0,
                     playing = true,
                     nextSongLabel = "Up Next: ${testSongs[2].song.title}",
-                    upNextSongs = upNextSongsController.currentUpNextSongList()
+                    upNextSongs = upNextSongsController.currentPlaylist()
                         .map { it.toPlaylistViewSong() }
                 ),
                 vs

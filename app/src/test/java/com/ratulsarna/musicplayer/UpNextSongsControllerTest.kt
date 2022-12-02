@@ -48,7 +48,7 @@ class UpNextSongsControllerTest {
             assertNull(nextSong())
             assertNull(previousSong())
             assertNull(peekNextSong())
-            assertTrue(currentUpNextSongList().isEmpty())
+            assertTrue(currentPlaylist().isEmpty())
         }
     }
 

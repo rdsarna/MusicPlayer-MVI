@@ -1,5 +1,6 @@
 package com.ratulsarna.musicplayer.ui
 
+import androidx.compose.runtime.Immutable
 import com.ratulsarna.musicplayer.repository.model.Song
 import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 
@@ -20,10 +21,9 @@ sealed class MusicPlayerEvent {
 }
 
 sealed class MusicPlayerResult {
-    data class UiCreateResult(val upNextSongList: List<PlaylistViewSong>) : MusicPlayerResult()
+    data class UiCreateResult(val playlist: List<PlaylistViewSong>) : MusicPlayerResult()
     data class UiStartResult(
         val song: Song?,
-        val nextSong: Song?,
         val duration: Int,
         val playing: Boolean?,
         val errorLoadingSong: Boolean,
@@ -33,9 +33,7 @@ sealed class MusicPlayerResult {
     data class PauseResult(val playing: Boolean) : MusicPlayerResult()
     data class NewSongResult(
         val song: Song?,
-        val nextSong: Song?,
         val duration: Int,
-        val upNextSongList: List<PlaylistViewSong>,
         val playing: Boolean,
         val errorLoading: Boolean,
     ) : MusicPlayerResult()
