@@ -7,6 +7,7 @@ package com.ratulsarna.musicplayer.ui.compose
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.*
@@ -52,6 +53,7 @@ import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import fr.swarmlab.beta.ui.screens.components.material3.*
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
@@ -128,6 +130,12 @@ fun MusicPlayerScreen(
     val navigationBarHeight = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
+
+    val scope = rememberCoroutineScope()
+    BackHandler(enabled = sheetState.isExpanded) {
+        scope.launch { sheetState.collapse() }
+    }
+
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(
