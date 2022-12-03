@@ -45,17 +45,17 @@ fun ViewEffects(
     val context = LocalContext.current
     val effectFlowLifecycleAware =
         remember(
-            viewModel.viewEffects,
+            viewModel.sideEffects,
             lifecycleOwner
         ) {
-            viewModel.viewEffects
+            viewModel.sideEffects
                 .flowWithLifecycle(
                     lifecycleOwner.lifecycle,
                     Lifecycle.State.STARTED
                 )
         }
     LaunchedEffect(
-        key1 = viewModel.viewEffects,
+        key1 = viewModel.sideEffects,
         key2 = lifecycleOwner,
     ) {
         effectFlowLifecycleAware.collect { effect ->

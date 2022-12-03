@@ -13,6 +13,7 @@ class UpNextSongsControllerTest {
 
     private val testSongs = listOf(
         PlaylistSongWrapper(0, Song(
+            0,
             "Levitating",
             "Dua Lipa feat. DaBaby",
             2020,
@@ -21,6 +22,7 @@ class UpNextSongsControllerTest {
         )
         ),
         PlaylistSongWrapper(1, Song(
+            1,
             "Drinkee",
             "Sofi Tukker",
             2016,
@@ -29,6 +31,7 @@ class UpNextSongsControllerTest {
         )
         ),
         PlaylistSongWrapper(2, Song(
+            2,
             "Fireflies",
             "Owl City",
             2009,
@@ -61,6 +64,7 @@ class UpNextSongsControllerTest {
 
         val expectedList = listOf(
             Song(
+                0,
                 "Drinkee",
                 "Sofi Tukker",
                 2016,
@@ -68,6 +72,7 @@ class UpNextSongsControllerTest {
                 R.raw.sofi_tukker_drinkee,
             ),
             Song(
+                1,
                 "Fireflies",
                 "Owl City",
                 2009,

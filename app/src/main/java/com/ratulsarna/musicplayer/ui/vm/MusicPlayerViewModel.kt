@@ -13,11 +13,9 @@ import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
 import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
-import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
 import com.ratulsarna.musicplayer.utils.interval
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -40,7 +38,7 @@ class MusicPlayerViewModel @Inject constructor(
     private val viewEffectChannel = Channel<MusicPlayerSideEffect>(Channel.BUFFERED)
 
     val viewState: StateFlow<MusicPlayerViewState>
-    val viewEffects: Flow<MusicPlayerSideEffect> = viewEffectChannel.receiveAsFlow()
+    val sideEffects: Flow<MusicPlayerSideEffect> = viewEffectChannel.receiveAsFlow()
 
     init {
         val initialVS = MusicPlayerViewState.INITIAL
