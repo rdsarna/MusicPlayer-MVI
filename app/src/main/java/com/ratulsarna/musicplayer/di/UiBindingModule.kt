@@ -3,7 +3,7 @@ package com.ratulsarna.musicplayer.di
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ratulsarna.musicplayer.ui.compose.ComposeActivity
-import com.ratulsarna.musicplayer.ui.MusicPlayerViewModel
+import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import dagger.Binds
 import dagger.Module
 import dagger.android.ContributesAndroidInjector

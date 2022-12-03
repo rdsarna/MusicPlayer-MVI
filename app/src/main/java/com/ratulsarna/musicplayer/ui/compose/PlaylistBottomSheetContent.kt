@@ -34,14 +34,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ratulsarna.musicplayer.ui.MusicPlayerEvent
+import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
 import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayDarkerTransparent
 import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayTransparent
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Composable
 fun PlaylistBottomSheetContent(
@@ -51,7 +50,7 @@ fun PlaylistBottomSheetContent(
     playlist: ImmutableList<PlaylistViewSong>,
     currentSong: PlaylistViewSong?,
     bottomSheetProgressFractionProvider: () -> Float,
-    sendUiEvent: (MusicPlayerEvent) -> Unit,
+    sendUiEvent: (MusicPlayerIntent) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     Column(
@@ -113,7 +112,7 @@ fun Playlist(
     modifier: Modifier = Modifier,
     playlist: ImmutableList<PlaylistViewSong>,
     currentSong: PlaylistViewSong?,
-    sendUiEvent: (MusicPlayerEvent) -> Unit,
+    sendUiEvent: (MusicPlayerIntent) -> Unit,
     navigationBarHeight: Dp,
 ) {
     LazyColumn(
@@ -143,7 +142,7 @@ private fun PlaylistSongItem(
     modifier: Modifier = Modifier,
     playlistSong: PlaylistViewSong,
     currentSong: PlaylistViewSong?,
-    sendUiEvent: (MusicPlayerEvent) -> Unit
+    sendUiEvent: (MusicPlayerIntent) -> Unit
 ) {
     val backgroundColor: Color by animateColorAsState(
         targetValue = if (playlistSong.id == currentSong?.id) {
@@ -156,7 +155,7 @@ private fun PlaylistSongItem(
     Row(
         modifier = Modifier
             .clickable {
-                sendUiEvent(MusicPlayerEvent.NewSongEvent(playlistSong.id))
+                sendUiEvent(MusicPlayerIntent.NewSongIntent(playlistSong.id))
             }
             .drawBehind {
                 drawRect(backgroundColor)

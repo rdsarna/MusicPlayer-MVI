@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.flowWithLifecycle
+import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
@@ -19,8 +20,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 fun setupEventChannel(
     lifecycleOwner: LifecycleOwner,
     viewModel: MusicPlayerViewModel
-): Channel<MusicPlayerEvent> {
-    val eventChannel = remember { Channel<MusicPlayerEvent>(Channel.BUFFERED) }
+): Channel<MusicPlayerIntent> {
+    val eventChannel = remember { Channel<MusicPlayerIntent>(Channel.BUFFERED) }
     LaunchedEffect(
         key1 = eventChannel,
         key2 = lifecycleOwner,
@@ -57,17 +58,13 @@ fun ViewEffects(
     ) {
         effectFlowLifecycleAware.collect { effect ->
             when (effect) {
-                is MusicPlayerEffect.ShowErrorEffect -> {
+                is MusicPlayerSideEffect.ShowErrorSideEffect -> {
                     Toast.makeText(
                         context,
                         effect.errorMessage,
                         Toast.LENGTH_LONG
                     )
                         .show()
-                }
-                is MusicPlayerEffect.ForceScreenOnEffect,
-                MusicPlayerEffect.NoOpEffect -> {
-                    // ignore
                 }
             }
         }
@@ -78,10 +75,10 @@ fun ViewEffects(
 fun LifecycleEvents(
     viewModel: MusicPlayerViewModel,
     lifecycleOwner: LifecycleOwner,
-    eventChannel: Channel<MusicPlayerEvent>
+    eventChannel: Channel<MusicPlayerIntent>
 ) {
     LaunchedEffect(true) {
-        viewModel.processInput(MusicPlayerEvent.UiCreateEvent)
+        viewModel.processInput(MusicPlayerIntent.UiCreateIntent)
     }
     // If `lifecycleOwner` changes, dispose and reset the effect
     DisposableEffect(lifecycleOwner) {
@@ -90,13 +87,13 @@ fun LifecycleEvents(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_CREATE -> {
-                    eventChannel.trySend(MusicPlayerEvent.UiCreateEvent)
+                    eventChannel.trySend(MusicPlayerIntent.UiCreateIntent)
                 }
                 Lifecycle.Event.ON_START -> {
-                    eventChannel.trySend(MusicPlayerEvent.UiStartEvent)
+                    eventChannel.trySend(MusicPlayerIntent.UiStartIntent)
                 }
                 Lifecycle.Event.ON_STOP -> {
-                    eventChannel.trySend(MusicPlayerEvent.UiStopEvent)
+                    eventChannel.trySend(MusicPlayerIntent.UiStopIntent)
                 }
                 else -> {
                     // ignore

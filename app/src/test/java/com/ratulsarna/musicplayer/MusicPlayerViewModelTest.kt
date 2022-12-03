@@ -4,10 +4,10 @@ import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryMock
 import com.ratulsarna.musicplayer.repository.model.Playlist
 import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
 import com.ratulsarna.musicplayer.repository.model.Song
-import com.ratulsarna.musicplayer.ui.MusicPlayerEffect.ForceScreenOnEffect
-import com.ratulsarna.musicplayer.ui.MusicPlayerEffect.ShowErrorEffect
-import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
-import com.ratulsarna.musicplayer.ui.MusicPlayerViewModel
+import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.ForceScreenOnSideEffect
+import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.ShowErrorSideEffect
+import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
+import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
 import com.ratulsarna.musicplayer.controllers.MediaPlayerCommand
 import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
@@ -71,7 +71,7 @@ class MusicPlayerViewModelTest {
 
         val viewStateTester = viewModel.viewState.test()
 
-        viewModel.processInput(UiCreateEvent)
+        viewModel.processInput(UiCreateIntent)
 
         viewStateTester.assertValueAt(1) { vs ->
             assertEquals(
@@ -91,7 +91,7 @@ class MusicPlayerViewModelTest {
 
         val viewStateTester = viewModel.viewState.test()
 
-        viewModel.processInput(UiStartEvent)
+        viewModel.processInput(UiStartIntent)
 
         viewStateTester.assertValueAt(0) { vs ->
             assertEquals(
@@ -108,8 +108,8 @@ class MusicPlayerViewModelTest {
 
         val viewStateTester = viewModel.viewState.test()
 
-        viewModel.processInput(UiCreateEvent)
-        viewModel.processInput(UiStartEvent)
+        viewModel.processInput(UiCreateIntent)
+        viewModel.processInput(UiStartIntent)
 
         viewStateTester.assertValueAt(3) { vs ->
             val song = testSongs[0].song.toPlaylistViewSong()
@@ -140,9 +140,9 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
         val viewEffectTester = viewModel.viewEffects.test()
 
-        viewModel.processInput(UiCreateEvent)
-        viewModel.processInput(UiStartEvent)
-        viewModel.processInput(PlayEvent)
+        viewModel.processInput(UiCreateIntent)
+        viewModel.processInput(UiStartIntent)
+        viewModel.processInput(PlayIntent)
 
         viewStateTester.assertValueAt(4) { vs ->
             val song = testSongs[0].song.toPlaylistViewSong()
@@ -167,7 +167,7 @@ class MusicPlayerViewModelTest {
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
 
-        assertEquals(ForceScreenOnEffect(true), viewEffectTester.values().last())
+        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
@@ -178,11 +178,11 @@ class MusicPlayerViewModelTest {
         val viewEffectTester = viewModel.viewEffects.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(5))
-            processInput(PauseEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(5))
+            processInput(PauseIntent)
         }
 
         viewStateTester.assertValueAt(6) { vs ->
@@ -210,7 +210,7 @@ class MusicPlayerViewModelTest {
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
         assertEquals(MediaPlayerCommand.Pause, mediaPlayerController.commands[3])
 
-        assertEquals(ForceScreenOnEffect(false), viewEffectTester.values().last())
+        assertEquals(ForceScreenOnSideEffect(false), viewEffectTester.values().last())
     }
 
     @Test
@@ -221,11 +221,11 @@ class MusicPlayerViewModelTest {
         val viewEffectTester = viewModel.viewEffects.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(5))
-            processInput(NextSongEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(5))
+            processInput(NextSongIntent)
         }
 
         viewStateTester.assertValueAt(7) { vs ->
@@ -254,7 +254,7 @@ class MusicPlayerViewModelTest {
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
 
-        assertEquals(ForceScreenOnEffect(true), viewEffectTester.values().last())
+        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
@@ -265,11 +265,11 @@ class MusicPlayerViewModelTest {
         val viewEffectTester = viewModel.viewEffects.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(5))
-            processInput(PreviousSongEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(5))
+            processInput(PreviousSongIntent)
         }
 
         viewStateTester.assertValueAt(7) { vs ->
@@ -298,7 +298,7 @@ class MusicPlayerViewModelTest {
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
 
-        assertEquals(ForceScreenOnEffect(true), viewEffectTester.values().last())
+        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
@@ -309,11 +309,11 @@ class MusicPlayerViewModelTest {
         val viewEffectTester = viewModel.viewEffects.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(5))
-            processInput(NewSongEvent(R.raw.owl_city_fireflies))
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(5))
+            processInput(NewSongIntent(R.raw.owl_city_fireflies))
         }
 
         viewStateTester.assertValueAt(7) { vs ->
@@ -342,7 +342,7 @@ class MusicPlayerViewModelTest {
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
 
-        assertEquals(ForceScreenOnEffect(true), viewEffectTester.values().last())
+        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
@@ -353,11 +353,11 @@ class MusicPlayerViewModelTest {
         val viewEffectTester = viewModel.viewEffects.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(TEST_SONG_DURATION.toInt()))
-            processInput(SongCompletedEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(TEST_SONG_DURATION.toInt()))
+            processInput(SongCompletedIntent)
         }
 
         viewStateTester.assertValueAt(7) { vs ->
@@ -386,7 +386,7 @@ class MusicPlayerViewModelTest {
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
 
-        assertEquals(ForceScreenOnEffect(true), viewEffectTester.values().last())
+        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
@@ -397,11 +397,11 @@ class MusicPlayerViewModelTest {
 
         mediaPlayerController._currentPosition = 2000
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(2000))
-            processInput(SeekForwardEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(2000))
+            processInput(SeekForwardIntent)
         }
 
         viewStateTester.assertValueAt(6) { vs ->
@@ -438,11 +438,11 @@ class MusicPlayerViewModelTest {
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(10000))
-            processInput(SeekBackwardEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(10000))
+            processInput(SeekBackwardIntent)
         }
 
         viewStateTester.assertValueAt(6) { vs ->
@@ -478,10 +478,10 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(SeekToEvent((TEST_SONG_DURATION/2).toInt()))
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(SeekToIntent((TEST_SONG_DURATION/2).toInt()))
         }
 
         viewStateTester.assertValueAt(5) { vs ->
@@ -518,10 +518,10 @@ class MusicPlayerViewModelTest {
 
         mediaPlayerController._currentPosition = 2000
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(CurrentPositionEvent(2000))
-            processInput(SeekForwardEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(CurrentPositionIntent(2000))
+            processInput(SeekForwardIntent)
         }
 
         viewStateTester.assertValueAt(5) { vs ->
@@ -557,10 +557,10 @@ class MusicPlayerViewModelTest {
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(CurrentPositionEvent(10000))
-            processInput(SeekBackwardEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(CurrentPositionIntent(10000))
+            processInput(SeekBackwardIntent)
         }
 
         viewStateTester.assertValueAt(5) { vs ->
@@ -595,9 +595,9 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(SeekToEvent((TEST_SONG_DURATION/2).toInt()))
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(SeekToIntent((TEST_SONG_DURATION/2).toInt()))
         }
 
         viewStateTester.assertValueAt(4) { vs ->
@@ -632,10 +632,10 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(UiStopEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(UiStopIntent)
         }
 
         viewStateTester.assertValueAt(4) { vs ->
@@ -671,9 +671,9 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(UiStopEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(UiStopIntent)
         }
 
         viewStateTester.assertValueAt(3) { vs ->
@@ -709,12 +709,12 @@ class MusicPlayerViewModelTest {
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(CurrentPositionEvent(10000))
-            processInput(UiStopEvent)
-            processInput(UiStartEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(CurrentPositionIntent(10000))
+            processInput(UiStopIntent)
+            processInput(UiStartIntent)
         }
 
         viewStateTester.assertValueAt(7) { vs ->
@@ -756,11 +756,11 @@ class MusicPlayerViewModelTest {
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(CurrentPositionEvent(10000))
-            processInput(UiStopEvent)
-            processInput(UiStartEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(CurrentPositionIntent(10000))
+            processInput(UiStopIntent)
+            processInput(UiStartIntent)
         }
 
         viewStateTester.assertValueAt(6) { vs ->
@@ -798,17 +798,17 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
 
         viewModel.apply {
-            processInput(UiCreateEvent)
-            processInput(UiStartEvent)
-            processInput(PlayEvent)
-            processInput(NextSongEvent)
-            processInput(NextSongEvent)
-            processInput(NextSongEvent)
-            processInput(NextSongEvent)
-            processInput(NextSongEvent)
-            processInput(NextSongEvent)
-            processInput(NextSongEvent)
-            processInput(NextSongEvent)
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(NextSongIntent)
+            processInput(NextSongIntent)
+            processInput(NextSongIntent)
+            processInput(NextSongIntent)
+            processInput(NextSongIntent)
+            processInput(NextSongIntent)
+            processInput(NextSongIntent)
+            processInput(NextSongIntent)
         }
 
         viewStateTester.assertValueAt(20) { vs ->
@@ -841,8 +841,8 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
         val viewEffectTester = viewModel.viewEffects.test()
 
-        viewModel.processInput(UiCreateEvent)
-        viewModel.processInput(UiStartEvent)
+        viewModel.processInput(UiCreateIntent)
+        viewModel.processInput(UiStartIntent)
 
         viewStateTester.assertValueAt(1) { vs ->
             assertEquals(
@@ -855,7 +855,7 @@ class MusicPlayerViewModelTest {
             true
         }
 
-        assertTrue { viewEffectTester.values().last() is ShowErrorEffect }
+        assertTrue { viewEffectTester.values().last() is ShowErrorSideEffect }
     }
 
     @Test
@@ -867,8 +867,8 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
         val viewEffectTester = viewModel.viewEffects.test()
 
-        viewModel.processInput(UiCreateEvent)
-        viewModel.processInput(NewSongEvent(R.raw.dua_lipa_levitating))
+        viewModel.processInput(UiCreateIntent)
+        viewModel.processInput(NewSongIntent(R.raw.dua_lipa_levitating))
 
         viewStateTester.assertValueAt(1) { vs ->
             assertEquals(
@@ -881,7 +881,7 @@ class MusicPlayerViewModelTest {
             true
         }
 
-        assertTrue { viewEffectTester.values().last() is ShowErrorEffect }
+        assertTrue { viewEffectTester.values().last() is ShowErrorSideEffect }
     }
 
     @Test
@@ -893,8 +893,8 @@ class MusicPlayerViewModelTest {
         val viewStateTester = viewModel.viewState.test()
         val viewEffectTester = viewModel.viewEffects.test()
 
-        viewModel.processInput(UiCreateEvent)
-        viewModel.processInput(UiStartEvent)
+        viewModel.processInput(UiCreateIntent)
+        viewModel.processInput(UiStartIntent)
 
         viewStateTester.assertValueAt(2) { vs ->
             val song = testSongs[0].song.toPlaylistViewSong()
@@ -914,10 +914,10 @@ class MusicPlayerViewModelTest {
             true
         }
 
-        assertTrue { viewEffectTester.values().last() is ShowErrorEffect }
+        assertTrue { viewEffectTester.values().last() is ShowErrorSideEffect }
 
         mediaPlayerController._loadNewSongResultsInError = false
-        viewModel.processInput(NextSongEvent)
+        viewModel.processInput(NextSongIntent)
 
         viewStateTester.assertValueAt(4) { vs ->
             val song = testSongs[1].song.toPlaylistViewSong()

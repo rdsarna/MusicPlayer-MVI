@@ -13,46 +13,37 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
 import com.ratulsarna.musicplayer.R
 import com.ratulsarna.musicplayer.ui.LifecycleEvents
-import com.ratulsarna.musicplayer.ui.MusicPlayerEvent
-import com.ratulsarna.musicplayer.ui.MusicPlayerViewModel
+import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
+import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
 import com.ratulsarna.musicplayer.ui.ViewEffects
-import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 import com.ratulsarna.musicplayer.ui.setupEventChannel
 import com.ratulsarna.musicplayer.ui.ui.theme.*
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import fr.swarmlab.beta.ui.screens.components.material3.*
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.max
@@ -175,7 +166,7 @@ fun MusicPlayerScreenContent(
     statusBarHeight: Dp = 0.dp,
     navigationBarHeight: Dp = 0.dp,
     bottomSheetProgressFractionProvider: () -> Float = { 1f },
-    sendUiEvent: (MusicPlayerEvent) -> Unit,
+    sendUiEvent: (MusicPlayerIntent) -> Unit,
 ) {
     val controlEventsProvider = remember { ControlEventsProvider(sendUiEvent) }
     Box(modifier = modifier) {
@@ -240,7 +231,7 @@ fun MusicPlayerScreenContent(
                     .getTimeLabel(),
                 totalDuration = state.totalDuration,
                 onSliderValueChange = {
-                    sendUiEvent(MusicPlayerEvent.SeekToEvent(it.roundToInt()))
+                    sendUiEvent(MusicPlayerIntent.SeekToIntent(it.roundToInt()))
                 },
                 sliderValue = min(
                     state.elapsedTime.toFloat(),

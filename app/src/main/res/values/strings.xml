@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">MusicPlayer</string>
-    <string name="title_activity_compose">ComposeActivity</string>
+    <string name="title_activity_compose">MusicPlayer</string>
 </resources>

@@ -1,14 +1,18 @@
-package com.ratulsarna.musicplayer.ui
+package com.ratulsarna.musicplayer.ui.vm
 
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ratulsarna.musicplayer.repository.model.Song
-import com.ratulsarna.musicplayer.ui.MusicPlayerEffect.*
-import com.ratulsarna.musicplayer.ui.MusicPlayerEvent.*
-import com.ratulsarna.musicplayer.ui.MusicPlayerResult.*
+import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.*
+import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
+import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange.*
 import com.ratulsarna.musicplayer.controllers.MediaPlayerController
 import com.ratulsarna.musicplayer.controllers.UpNextSongsController
+import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
+import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
+import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange
+import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
@@ -30,20 +34,20 @@ class MusicPlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var oneSecondIntervalJob: Job? = null
-    private val _eventFlow = MutableSharedFlow<MusicPlayerEvent>()
-    private val viewEffectChannel = Channel<MusicPlayerEffect>(Channel.BUFFERED)
+    private val _eventFlow = MutableSharedFlow<MusicPlayerIntent>()
+    private val viewEffectChannel = Channel<MusicPlayerSideEffect>(Channel.BUFFERED)
 
     val viewState: StateFlow<MusicPlayerViewState>
-    val viewEffects: Flow<MusicPlayerEffect> = viewEffectChannel.receiveAsFlow()
+    val viewEffects: Flow<MusicPlayerSideEffect> = viewEffectChannel.receiveAsFlow()
 
     init {
         val initialVS = MusicPlayerViewState.INITIAL
         viewState = _eventFlow
             .onEach { Timber.d("Event = $it") }
-            .eventToResult()
+            .intentToPartialStateChange()
             .onEach { Timber.d("Result = $it") }
-            .resultToViewEffect()
-            .resultToViewState()
+            .partialStateChangeToSideEffect()
+            .partialChangeToViewState()
             .onEach { Timber.d("ViewState = $it") }
             .catch {
                 it.printStackTrace()
@@ -60,7 +64,7 @@ class MusicPlayerViewModel @Inject constructor(
                 oneSecondIntervalJob = interval(1000, TimeUnit.MILLISECONDS).map {
                     mediaPlayerController.getCurrentPosition()
                 }.onEach {
-                    processInput(CurrentPositionEvent(it))
+                    processInput(CurrentPositionIntent(it))
                 }.launchIn(viewModelScope)
             },
             pausedStoppedListener = {
@@ -68,7 +72,7 @@ class MusicPlayerViewModel @Inject constructor(
             },
             songCompletedListener = {
                 viewModelScope.launch {
-                    processInput(SongCompletedEvent)
+                    processInput(SongCompletedIntent)
                 }
             }
         )
@@ -79,11 +83,11 @@ class MusicPlayerViewModel @Inject constructor(
         super.onCleared()
     }
 
-    suspend fun processInput(event: MusicPlayerEvent) {
+    suspend fun processInput(event: MusicPlayerIntent) {
         _eventFlow.emit(event)
     }
 
-    private fun Flow<MusicPlayerEvent>.eventToResult(): Flow<MusicPlayerResult> {
+    private fun Flow<MusicPlayerIntent>.intentToPartialStateChange(): Flow<MusicPlayerPartialStateChange> {
         return merge(
             onUiCreate(filterIsInstance()),
             onUiStart(filterIsInstance()),
@@ -101,11 +105,11 @@ class MusicPlayerViewModel @Inject constructor(
         )
     }
 
-    private fun Flow<MusicPlayerResult>.resultToViewState(): Flow<MusicPlayerViewState> {
+    private fun Flow<MusicPlayerPartialStateChange>.partialChangeToViewState(): Flow<MusicPlayerViewState> {
         return scan(MusicPlayerViewState.INITIAL) { vs, result ->
             when (result) {
-                is UiCreateResult -> vs.copy(playlist = result.playlist.toImmutableList())
-                is UiStartResult -> result.song?.let { song ->
+                is UiCreatePartialStateChange -> vs.copy(playlist = result.playlist.toImmutableList())
+                is UiStartPartialStateChange -> result.song?.let { song ->
                     vs.copy(
                         loading = false,
                         songTitle = song.title,
@@ -116,7 +120,7 @@ class MusicPlayerViewModel @Inject constructor(
                         currentPlaylistSong = song.toPlaylistViewSong(),
                     )
                 } ?: vs
-                is NewSongResult -> {
+                is NewSongPartialStateChange -> {
                     result.song?.let { song ->
                         vs.copy(
                             loading = false,
@@ -130,52 +134,44 @@ class MusicPlayerViewModel @Inject constructor(
                         )
                     } ?: vs
                 }
-                is SeekToResult -> {
+                is SeekToPartialStateChange -> {
                     vs.copy(elapsedTime = result.position)
                 }
-                UiStopResult -> vs
-                is PauseResult -> vs.copy(playing = result.playing)
-                is PlayResult -> vs.copy(playing = result.playing)
-                is CurrentPositionResult -> vs.copy(elapsedTime = result.position)
+                UiStopPartialStateChange -> vs
+                is PausePartialStateChange -> vs.copy(playing = result.playing)
+                is PlayPartialStateChange -> vs.copy(playing = result.playing)
+                is CurrentPositionPartialStateChange -> vs.copy(elapsedTime = result.position)
             }
         }
-            .distinctUntilChanged()
     }
 
-    private fun Flow<MusicPlayerResult>.resultToViewEffect(): Flow<MusicPlayerResult> {
+    private fun Flow<MusicPlayerPartialStateChange>.partialStateChangeToSideEffect(): Flow<MusicPlayerPartialStateChange> {
         return onEach { result ->
-            val effect = when (result) {
-                is PlayResult -> ForceScreenOnEffect(true)
-                is PauseResult -> ForceScreenOnEffect(false)
-                is UiStartResult -> when {
-                    result.errorLoadingSong -> ShowErrorEffect("Error loading song. Try next song.")
-                    else -> NoOpEffect
+            val effect = when {
+                (result is UiStartPartialStateChange && result.errorLoadingSong) ||
+                        (result is NewSongPartialStateChange && result.errorLoading) -> {
+                    ShowErrorSideEffect("Error loading song. Try next song.")
                 }
-                is NewSongResult -> when {
-                    result.errorLoading -> ShowErrorEffect("Error loading song. Try next song.")
-                    viewState.value.playing -> ForceScreenOnEffect(true)
-                    else -> NoOpEffect
-                }
-                else -> NoOpEffect
+                else -> null
             }
             Timber.d("SideEffect = $effect")
-            viewEffectChannel.send(effect)
+            effect?.let { viewEffectChannel.send(it) }
         }
     }
 
-    private fun onUiCreate(flow: Flow<UiCreateEvent>): Flow<UiCreateResult> =
+    private fun onUiCreate(flow: Flow<UiCreateIntent>): Flow<UiCreatePartialStateChange> =
         flow.map {
-            UiCreateResult(
+            UiCreatePartialStateChange(
                 upNextSongsController.loadDefaultPlaylistSongs()
                     .map { it.toPlaylistViewSong() }
             )
         }
 
-    private fun onUiStart(flow: Flow<UiStartEvent>): Flow<UiStartResult> =
+    private fun onUiStart(flow: Flow<UiStartIntent>): Flow<UiStartPartialStateChange> =
         flow.map { upNextSongsController.currentSong() }
             .transformLatest {
                 emit(
-                    UiStartResult(
+                    UiStartPartialStateChange(
                         upNextSongsController.currentSong(),
                         1,
                         playing = null,
@@ -200,7 +196,7 @@ class MusicPlayerViewModel @Inject constructor(
                     }
                 }
                 emit(
-                    UiStartResult(
+                    UiStartPartialStateChange(
                         upNextSongsController.currentSong(),
                         duration,
                         playing = playing,
@@ -208,62 +204,62 @@ class MusicPlayerViewModel @Inject constructor(
                     )
                 )
             }
-    private fun onUiStop(flow: Flow<UiStopEvent>): Flow<UiStopResult> =
+    private fun onUiStop(flow: Flow<UiStopIntent>): Flow<UiStopPartialStateChange> =
         flow.map {
             // Important note: We are pausing here (if player is playing) to stop playback
             // immediately but this pause is not propagated to the Ui because we want to
             // continue playback on the next UiStartEvent
             mediaPlayerController.pause()
             mediaPlayerController.release()
-            UiStopResult
+            UiStopPartialStateChange
         }
-    private fun onPlay(flow: Flow<PlayEvent>): Flow<PlayResult> =
+    private fun onPlay(flow: Flow<PlayIntent>): Flow<PlayPartialStateChange> =
         flow.map {
-            PlayResult(mediaPlayerController.start())
+            PlayPartialStateChange(mediaPlayerController.start())
         }
-    private fun onPause(flow: Flow<PauseEvent>): Flow<PauseResult> =
+    private fun onPause(flow: Flow<PauseIntent>): Flow<PausePartialStateChange> =
         flow.map {
-            PauseResult(mediaPlayerController.pause().not())
+            PausePartialStateChange(mediaPlayerController.pause().not())
         }
 
-    private fun onNextSong(flow: Flow<NextSongEvent>): Flow<NewSongResult> =
+    private fun onNextSong(flow: Flow<NextSongIntent>): Flow<NewSongPartialStateChange> =
         flow.map {
             upNextSongsController.nextSong()
         }.newSongResultFromSong()
 
-    private fun onPreviousSong(flow: Flow<PreviousSongEvent>): Flow<NewSongResult> =
+    private fun onPreviousSong(flow: Flow<PreviousSongIntent>): Flow<NewSongPartialStateChange> =
         flow.map {
             upNextSongsController.previousSong()
         }.newSongResultFromSong()
 
-    private fun onSeekForward(flow: Flow<SeekForwardEvent>): Flow<SeekToResult> =
+    private fun onSeekForward(flow: Flow<SeekForwardIntent>): Flow<SeekToPartialStateChange> =
        flow.map {
-           SeekToResult(
+           SeekToPartialStateChange(
                mediaPlayerController.seekBy(SEEK_DURATION)
            )
        }
-    private fun onSeekBackward(flow: Flow<SeekBackwardEvent>): Flow<SeekToResult> =
+    private fun onSeekBackward(flow: Flow<SeekBackwardIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
-            SeekToResult(
+            SeekToPartialStateChange(
                 mediaPlayerController.seekBy(-SEEK_DURATION)
             )
         }
-    private fun onSeekTo(flow: Flow<SeekToEvent>): Flow<SeekToResult> =
+    private fun onSeekTo(flow: Flow<SeekToIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
-            SeekToResult(
+            SeekToPartialStateChange(
                 mediaPlayerController.seekTo(it.position)
             )
         }
 
-    private fun onSongCompleted(flow: Flow<SongCompletedEvent>): Flow<NewSongResult> =
+    private fun onSongCompleted(flow: Flow<SongCompletedIntent>): Flow<NewSongPartialStateChange> =
         flow.map {
             upNextSongsController.nextSong()
         }.newSongResultFromSong()
 
-    private fun onCurrentPosition(flow: Flow<CurrentPositionEvent>): Flow<CurrentPositionResult> =
-        flow.map { CurrentPositionResult(it.position) }
+    private fun onCurrentPosition(flow: Flow<CurrentPositionIntent>): Flow<CurrentPositionPartialStateChange> =
+        flow.map { CurrentPositionPartialStateChange(it.position) }
 
-    private fun onNewSong(flow: Flow<NewSongEvent>): Flow<NewSongResult> =
+    private fun onNewSong(flow: Flow<NewSongIntent>): Flow<NewSongPartialStateChange> =
         flow.mapNotNull {
             if  (it.songId != viewState.value.currentPlaylistSong?.id) {
                 upNextSongsController.newSong(it.songId)
@@ -272,10 +268,10 @@ class MusicPlayerViewModel @Inject constructor(
             }
         }.newSongResultFromSong()
 
-    private fun Flow<Song?>.newSongResultFromSong(): Flow<NewSongResult> =
+    private fun Flow<Song?>.newSongResultFromSong(): Flow<NewSongPartialStateChange> =
         transformLatest { song ->
             emit(
-                NewSongResult(
+                NewSongPartialStateChange(
                     song,
                     -1,
                     playing = false,
@@ -293,7 +289,7 @@ class MusicPlayerViewModel @Inject constructor(
                 MINIMUM_DURATION to false
             }
             emit(
-                NewSongResult(
+                NewSongPartialStateChange(
                     song = song,
                     duration = duration,
                     playing = playing,
