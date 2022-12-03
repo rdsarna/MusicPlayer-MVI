@@ -373,7 +373,6 @@ fun DefaultPreview() {
                 albumArt = R.drawable.placeholder,
                 totalDuration = 500000f,
                 elapsedTime = 0,
-                currentPlaylistSong = null,
             ),
             sendUiEvent = {}
         )

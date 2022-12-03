@@ -114,7 +114,6 @@ class MusicPlayerViewModel @Inject constructor(
                         albumArt = song.albumArtResId,
                         totalDuration = result.duration.toFloat(),
                         playing = result.playing ?: vs.playing,
-                        currentPlaylistSong = song.toPlaylistViewSong(),
                     )
                 } ?: vs
                 is NewSongPartialStateChange -> {
@@ -127,7 +126,6 @@ class MusicPlayerViewModel @Inject constructor(
                             elapsedTime = 0,
                             totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
                             playing = result.playing,
-                            currentPlaylistSong = song.toPlaylistViewSong(),
                         )
                     } ?: vs
                 }
