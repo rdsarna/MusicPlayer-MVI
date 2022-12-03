@@ -77,9 +77,6 @@ fun LifecycleEvents(
     lifecycleOwner: LifecycleOwner,
     eventChannel: Channel<MusicPlayerIntent>
 ) {
-    LaunchedEffect(true) {
-        viewModel.processInput(MusicPlayerIntent.UiCreateIntent)
-    }
     // If `lifecycleOwner` changes, dispose and reset the effect
     DisposableEffect(lifecycleOwner) {
         // Create an observer that triggers our remembered callbacks

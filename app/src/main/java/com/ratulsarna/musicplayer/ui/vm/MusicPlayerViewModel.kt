@@ -18,6 +18,7 @@ import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
 import com.ratulsarna.musicplayer.utils.interval
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -27,10 +28,11 @@ import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MusicPlayerViewModel @Inject constructor(
     private val upNextSongsController: UpNextSongsController,
     private val mediaPlayerController: MediaPlayerController,
-    private val coroutineContextProvider: CoroutineContextProvider
+    private val coroutineContextProvider: CoroutineContextProvider,
 ) : ViewModel() {
 
     private var oneSecondIntervalJob: Job? = null
@@ -168,42 +170,36 @@ class MusicPlayerViewModel @Inject constructor(
         }
 
     private fun onUiStart(flow: Flow<UiStartIntent>): Flow<UiStartPartialStateChange> =
-        flow.map { upNextSongsController.currentSong() }
-            .transformLatest {
-                emit(
-                    UiStartPartialStateChange(
-                        upNextSongsController.currentSong(),
-                        1,
-                        playing = null,
-                        errorLoadingSong = false,
-                    )
-                )
-                val loadSuccess = withContext(coroutineContextProvider.io) {
-                    mediaPlayerController.loadNewSong(upNextSongsController.currentSong())
-                }
-                val duration = if (loadSuccess) mediaPlayerController.getDuration() else MINIMUM_DURATION
-                val currentViewState = viewState.value
-                var playing = false
-                when {
-                    currentViewState.playing && currentViewState.elapsedTime > 0 -> {
-                        playing = mediaPlayerController.seekToAndStart(currentViewState.elapsedTime)
-                    }
-                    currentViewState.elapsedTime > 0 -> {
-                        mediaPlayerController.seekTo(currentViewState.elapsedTime)
-                    }
-                    currentViewState.playing -> {
-                        playing = mediaPlayerController.start()
-                    }
-                }
-                emit(
-                    UiStartPartialStateChange(
-                        upNextSongsController.currentSong(),
-                        duration,
-                        playing = playing,
-                        errorLoadingSong = !loadSuccess,
-                    )
-                )
+        flow.transformLatest {
+            // emit a loading state if new song load takes time
+            val loadSuccess = withContext(coroutineContextProvider.io) {
+                mediaPlayerController.loadNewSong(upNextSongsController.currentSong())
             }
+            val duration =
+                if (loadSuccess) mediaPlayerController.getDuration() else MINIMUM_DURATION
+            val currentViewState = viewState.value
+            var playing = false
+            when {
+                currentViewState.playing && currentViewState.elapsedTime > 0 -> {
+                    playing = mediaPlayerController.seekToAndStart(currentViewState.elapsedTime)
+                }
+                currentViewState.elapsedTime > 0 -> {
+                    mediaPlayerController.seekTo(currentViewState.elapsedTime)
+                }
+                currentViewState.playing -> {
+                    playing = mediaPlayerController.start()
+                }
+            }
+            emit(
+                UiStartPartialStateChange(
+                    upNextSongsController.currentSong(),
+                    duration,
+                    playing = playing,
+                    errorLoadingSong = !loadSuccess,
+                )
+            )
+        }
+
     private fun onUiStop(flow: Flow<UiStopIntent>): Flow<UiStopPartialStateChange> =
         flow.map {
             // Important note: We are pausing here (if player is playing) to stop playback
@@ -213,10 +209,12 @@ class MusicPlayerViewModel @Inject constructor(
             mediaPlayerController.release()
             UiStopPartialStateChange
         }
+
     private fun onPlay(flow: Flow<PlayIntent>): Flow<PlayPartialStateChange> =
         flow.map {
             PlayPartialStateChange(mediaPlayerController.start())
         }
+
     private fun onPause(flow: Flow<PauseIntent>): Flow<PausePartialStateChange> =
         flow.map {
             PausePartialStateChange(mediaPlayerController.pause().not())
@@ -233,17 +231,19 @@ class MusicPlayerViewModel @Inject constructor(
         }.newSongResultFromSong()
 
     private fun onSeekForward(flow: Flow<SeekForwardIntent>): Flow<SeekToPartialStateChange> =
-       flow.map {
-           SeekToPartialStateChange(
-               mediaPlayerController.seekBy(SEEK_DURATION)
-           )
-       }
+        flow.map {
+            SeekToPartialStateChange(
+                mediaPlayerController.seekBy(SEEK_DURATION)
+            )
+        }
+
     private fun onSeekBackward(flow: Flow<SeekBackwardIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
             SeekToPartialStateChange(
                 mediaPlayerController.seekBy(-SEEK_DURATION)
             )
         }
+
     private fun onSeekTo(flow: Flow<SeekToIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
             SeekToPartialStateChange(
@@ -261,7 +261,7 @@ class MusicPlayerViewModel @Inject constructor(
 
     private fun onNewSong(flow: Flow<NewSongIntent>): Flow<NewSongPartialStateChange> =
         flow.mapNotNull {
-            if  (it.songId != viewState.value.currentPlaylistSong?.id) {
+            if (it.songId != viewState.value.currentPlaylistSong?.id) {
                 upNextSongsController.newSong(it.songId)
             } else {
                 null
@@ -299,6 +299,7 @@ class MusicPlayerViewModel @Inject constructor(
         }
 
     companion object {
-        @VisibleForTesting const val SEEK_DURATION = 5000 // ms
+        @VisibleForTesting
+        const val SEEK_DURATION = 5000 // ms
     }
 }
