@@ -7,7 +7,6 @@ package com.ratulsarna.musicplayer.ui.compose
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -34,21 +32,17 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
 import com.ratulsarna.musicplayer.R
-import com.ratulsarna.musicplayer.ui.LifecycleEvents
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
-import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
-import com.ratulsarna.musicplayer.ui.ViewEffects
-import com.ratulsarna.musicplayer.ui.setupEventChannel
 import com.ratulsarna.musicplayer.ui.ui.theme.*
+import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
-import fr.swarmlab.beta.ui.screens.components.material3.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+
+val ImageSize = 300.dp
 
 class ComposeActivity : DaggerAppCompatActivity() {
 
@@ -78,7 +72,7 @@ class ComposeActivity : DaggerAppCompatActivity() {
 fun MusicPlayerScreen(
     modifier: Modifier = Modifier,
     viewModel: MusicPlayerViewModel,
-    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
 ) {
     // ViewState
     val stateFlowLifecycleAware =
@@ -111,51 +105,16 @@ fun MusicPlayerScreen(
         eventChannel
     )
 
-    val sheetState = rememberBottomSheetState(initialValue = BottomSheetValue.Collapsed)
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = sheetState
-    )
-    val statusBarHeight = WindowInsets.statusBars
-        .asPaddingValues()
-        .calculateTopPadding()
     val navigationBarHeight = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
 
-    val scope = rememberCoroutineScope()
-    BackHandler(enabled = sheetState.isExpanded) {
-        scope.launch { sheetState.collapse() }
-    }
-
-    BottomSheetScaffold(
-        scaffoldState = scaffoldState,
-        sheetShape = RoundedCornerShape(
-            topStart = 16.dp,
-            topEnd = 16.dp
-        ),
-        sheetContent = {
-            PlaylistBottomSheetContent(
-                statusBarHeight = statusBarHeight,
-                navigationBarHeight = navigationBarHeight,
-                sheetState = sheetState,
-                playlist = musicPlayerViewState.playlist,
-                currentSong = musicPlayerViewState.currentPlaylistSong,
-                bottomSheetProgressFractionProvider = { scaffoldState.currentFraction },
-                sendUiEvent = { eventChannel.trySend(it) }
-            )
-        },
-        sheetBackgroundColor = Color.Transparent,
-        sheetPeekHeight = 48.dp + navigationBarHeight
-    ) {
-        MusicPlayerScreenContent(
-            modifier = modifier.fillMaxSize(),
-            state = musicPlayerViewState,
-            statusBarHeight = statusBarHeight,
-            navigationBarHeight = navigationBarHeight,
-            bottomSheetProgressFractionProvider = { scaffoldState.currentFraction },
-            sendUiEvent = { eventChannel.trySend(it) }
-        )
-    }
+    MusicPlayerScreenContent(
+        modifier = modifier.fillMaxSize(),
+        state = musicPlayerViewState,
+        navigationBarHeight = navigationBarHeight,
+        sendUiEvent = { eventChannel.trySend(it) }
+    )
 }
 
 
@@ -163,9 +122,7 @@ fun MusicPlayerScreen(
 fun MusicPlayerScreenContent(
     modifier: Modifier = Modifier,
     state: MusicPlayerViewState,
-    statusBarHeight: Dp = 0.dp,
     navigationBarHeight: Dp = 0.dp,
-    bottomSheetProgressFractionProvider: () -> Float = { 1f },
     sendUiEvent: (MusicPlayerIntent) -> Unit,
 ) {
     val controlEventsProvider = remember { ControlEventsProvider(sendUiEvent) }
@@ -194,24 +151,11 @@ fun MusicPlayerScreenContent(
                 modifier = Modifier
                     .fillMaxHeight(.55f)
                     .fillMaxWidth()
-                    .padding(
-                        horizontal = 16.dp,
-                    )
-                    .padding(
-                        bottom = 8.dp,
-                        top = 8.dp + statusBarHeight
-                    ),
+                    .padding(16.dp),
                 albumRes = state.albumArt,
-                bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
             )
             Spacer(modifier = Modifier.height(32.dp))
             SongTitle(
-                modifier = Modifier.graphicsLayer {
-                    alpha = max(
-                        0f,
-                        1f - bottomSheetProgressFractionProvider() * 2
-                    )
-                },
                 title = state.songTitle,
                 subTitle = state.songInfoLabel
             )
@@ -219,13 +163,7 @@ fun MusicPlayerScreenContent(
             SongSeekBar(
                 modifier = Modifier
                     .wrapContentHeight()
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        alpha = max(
-                            0f,
-                            1f - bottomSheetProgressFractionProvider() * 2
-                        )
-                    },
+                    .fillMaxWidth(),
                 currentTimeLabel = state.elapsedTime.getTimeLabel(),
                 totalDurationTimeLabel = state.totalDuration.toInt()
                     .getTimeLabel(),
@@ -242,15 +180,9 @@ fun MusicPlayerScreenContent(
             Controls(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .graphicsLayer {
-                        alpha = max(
-                            0f,
-                            1f - bottomSheetProgressFractionProvider() * 2
-                        )
-                    },
+                    .padding(horizontal = 32.dp),
                 showPlayButton = state.playing.not(),
-                controlEventsProvider,
+                controlEventsProvider = controlEventsProvider,
             )
             Spacer(modifier = Modifier.height(32.dp))
             Box(
@@ -259,65 +191,24 @@ fun MusicPlayerScreenContent(
                     .fillMaxWidth()
             )
         }
-        TopSlidingInHeader(
-            modifier = Modifier.padding(top = statusBarHeight),
-            controlEventsProvider = controlEventsProvider,
-            showPlayButton = state.playing.not(),
-            bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
-        )
     }
 }
-
-@Composable
-fun TopSlidingInHeader(
-    modifier: Modifier = Modifier,
-    controlEventsProvider: ControlEventsProvider,
-    bottomSheetProgressFractionProvider: () -> Float = { 1f },
-    showPlayButton: Boolean,
-) {
-    SlidingHeaderLayout(
-        modifier = modifier,
-        bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth()
-                .height(100.dp)
-        ) {
-            Controls(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.Center),
-                showPlayButton = showPlayButton,
-                controlEventsProvider = controlEventsProvider,
-            )
-        }
-    }
-}
-
-
 
 @Composable
 fun AlbumArt(
     modifier: Modifier = Modifier,
     albumRes: Int,
-    bottomSheetProgressFractionProvider: () -> Float = { 1f },
 ) {
-    Box(
-        modifier = modifier
-    ) {
-        CollapsingImageLayout(
-            bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider
-        ) {
-            Image(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp)),
-                painter = painterResource(id = albumRes),
-                contentDescription = "",
-            )
-        }
+    Box(modifier = modifier) {
+        Image(
+            modifier = Modifier
+                .width(ImageSize)
+                .aspectRatio(1f)
+                .align(Alignment.BottomCenter)
+                .clip(RoundedCornerShape(8.dp)),
+            painter = painterResource(id = albumRes),
+            contentDescription = "",
+        )
     }
 }
 
@@ -403,11 +294,6 @@ fun Controls(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         ControlImage(
-            id = R.drawable.ic_seek_backward,
-            onClick = controlEventsProvider.onSeekBackward,
-            contentScale = ContentScale.Inside
-        )
-        ControlImage(
             modifier = Modifier.padding(end = 8.dp),
             id = R.drawable.ic_previous,
             onClick = controlEventsProvider.onPrevious,
@@ -441,11 +327,6 @@ fun Controls(
             modifier = Modifier.padding(start = 8.dp),
             id = R.drawable.ic_next,
             onClick = controlEventsProvider.onNext,
-            contentScale = ContentScale.Inside
-        )
-        ControlImage(
-            id = R.drawable.ic_seek_forward,
-            onClick = controlEventsProvider.onSeekForward,
             contentScale = ContentScale.Inside
         )
     }
@@ -484,7 +365,16 @@ fun ControlImage(
 fun DefaultPreview() {
     MusicPlayerTheme {
         MusicPlayerScreenContent(
-            state = MusicPlayerViewState.INITIAL,
+            state = MusicPlayerViewState(
+                loading = false,
+                playing = false,
+                songTitle = "Test song",
+                songInfoLabel = "Test Artist | Dec 2020",
+                albumArt = R.drawable.placeholder,
+                totalDuration = 500000f,
+                elapsedTime = 0,
+                currentPlaylistSong = null,
+            ),
             sendUiEvent = {}
         )
     }
@@ -495,16 +385,3 @@ fun Int.getTimeLabel(): String {
     val seconds = this / 1000 % 60
     return "$minutes:${if (seconds < 10) "0$seconds" else seconds}"
 }
-
-val BottomSheetScaffoldState.currentFraction: Float
-    get() {
-        val fraction = bottomSheetState.progress.fraction
-        val from = bottomSheetState.progress.from
-        val to = bottomSheetState.progress.to
-        return when {
-            from == BottomSheetValue.Collapsed && to == BottomSheetValue.Collapsed -> 0f
-            from == BottomSheetValue.Expanded && to == BottomSheetValue.Expanded -> 1f
-            from == BottomSheetValue.Collapsed && to == BottomSheetValue.Expanded -> fraction
-            else -> 1f - fraction
-        }
-    }

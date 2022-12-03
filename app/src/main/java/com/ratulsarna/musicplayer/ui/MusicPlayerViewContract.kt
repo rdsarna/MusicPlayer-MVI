@@ -16,7 +16,6 @@ data class MusicPlayerViewState(
     val totalDuration: Float,
     val elapsedTime: Int,
     val currentPlaylistSong: PlaylistViewSong?,
-    val playlist: ImmutableList<PlaylistViewSong>,
 ) {
     companion object {
         val INITIAL = MusicPlayerViewState(
@@ -28,29 +27,23 @@ data class MusicPlayerViewState(
             totalDuration = 1f,
             elapsedTime = 0,
             currentPlaylistSong = null,
-            playlist = persistentListOf(),
         )
     }
 }
 
 sealed class MusicPlayerIntent {
-    object UiCreateIntent : MusicPlayerIntent()
     object UiStartIntent : MusicPlayerIntent()
     object UiStopIntent : MusicPlayerIntent()
     object PlayIntent : MusicPlayerIntent()
     object PauseIntent : MusicPlayerIntent()
-    data class NewSongIntent(val songId: Int) : MusicPlayerIntent()
     object SongCompletedIntent : MusicPlayerIntent()
     object NextSongIntent : MusicPlayerIntent()
     object PreviousSongIntent : MusicPlayerIntent()
-    object SeekForwardIntent : MusicPlayerIntent()
-    object SeekBackwardIntent : MusicPlayerIntent()
     data class SeekToIntent(val position: Int) : MusicPlayerIntent()
     data class CurrentPositionIntent(val position: Int): MusicPlayerIntent()
 }
 
 sealed class MusicPlayerPartialStateChange {
-    data class UiCreatePartialStateChange(val playlist: List<PlaylistViewSong>) : MusicPlayerPartialStateChange()
     data class UiStartPartialStateChange(
         val song: Song?,
         val duration: Int,

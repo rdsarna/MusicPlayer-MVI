@@ -1,4 +1,4 @@
-package com.ratulsarna.musicplayer.ui
+package com.ratulsarna.musicplayer.ui.compose
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -10,6 +10,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.flowWithLifecycle
+import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
+import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
 import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
@@ -77,18 +79,12 @@ fun LifecycleEvents(
     lifecycleOwner: LifecycleOwner,
     eventChannel: Channel<MusicPlayerIntent>
 ) {
-    LaunchedEffect(true) {
-        viewModel.processInput(MusicPlayerIntent.UiCreateIntent)
-    }
     // If `lifecycleOwner` changes, dispose and reset the effect
     DisposableEffect(lifecycleOwner) {
         // Create an observer that triggers our remembered callbacks
         // for sending analytics events
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_CREATE -> {
-                    eventChannel.trySend(MusicPlayerIntent.UiCreateIntent)
-                }
                 Lifecycle.Event.ON_START -> {
                     eventChannel.trySend(MusicPlayerIntent.UiStartIntent)
                 }
