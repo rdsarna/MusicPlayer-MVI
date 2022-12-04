@@ -1,6 +1,5 @@
 @file:OptIn(
     ExperimentalAnimationApi::class,
-    ExperimentalMaterial3Api::class,
 )
 
 package com.ratulsarna.musicplayer.ui.compose
@@ -87,22 +86,16 @@ fun MusicPlayerScreen(
         }
     val musicPlayerViewState by stateFlowLifecycleAware.collectAsState(viewModel.viewState.value)
 
-    // ViewEvents
-    val eventChannel = setupEventChannel(
+    // Intents
+    val intentChannel = setupIntentChannel(
         lifecycleOwner,
         viewModel
-    )
-
-    // ViewEffects
-    ViewEffects(
-        lifecycleOwner,
-        viewModel,
     )
 
     LifecycleEvents(
         viewModel,
         lifecycleOwner,
-        eventChannel
+        intentChannel
     )
 
     val navigationBarHeight = WindowInsets.navigationBars
@@ -113,7 +106,7 @@ fun MusicPlayerScreen(
         modifier = modifier.fillMaxSize(),
         state = musicPlayerViewState,
         navigationBarHeight = navigationBarHeight,
-        sendUiEvent = { eventChannel.trySend(it) }
+        sendIntent = { intentChannel.trySend(it) }
     )
 }
 
@@ -123,9 +116,9 @@ fun MusicPlayerScreenContent(
     modifier: Modifier = Modifier,
     state: MusicPlayerViewState,
     navigationBarHeight: Dp = 0.dp,
-    sendUiEvent: (MusicPlayerIntent) -> Unit,
+    sendIntent: (MusicPlayerIntent) -> Unit,
 ) {
-    val controlEventsProvider = remember { ControlEventsProvider(sendUiEvent) }
+    val controlEventsProvider = remember { ControlEventsProvider(sendIntent) }
     Box(modifier = modifier) {
         Column(
             modifier = Modifier
@@ -169,7 +162,7 @@ fun MusicPlayerScreenContent(
                     .getTimeLabel(),
                 totalDuration = state.totalDuration,
                 onSliderValueChange = {
-                    sendUiEvent(MusicPlayerIntent.SeekToIntent(it.roundToInt()))
+                    sendIntent(MusicPlayerIntent.SeekToIntent(it.roundToInt()))
                 },
                 sliderValue = min(
                     state.elapsedTime.toFloat(),
@@ -374,7 +367,7 @@ fun DefaultPreview() {
                 totalDuration = 500000f,
                 elapsedTime = 0,
             ),
-            sendUiEvent = {}
+            sendIntent = {}
         )
     }
 }

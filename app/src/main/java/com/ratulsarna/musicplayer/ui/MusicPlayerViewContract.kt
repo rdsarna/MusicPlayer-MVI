@@ -34,7 +34,6 @@ sealed class MusicPlayerIntent {
     object UiStopIntent : MusicPlayerIntent()
     object PlayIntent : MusicPlayerIntent()
     object PauseIntent : MusicPlayerIntent()
-    object SongCompletedIntent : MusicPlayerIntent()
     object NextSongIntent : MusicPlayerIntent()
     object PreviousSongIntent : MusicPlayerIntent()
     data class SeekToIntent(val position: Int) : MusicPlayerIntent()
@@ -59,8 +58,4 @@ sealed class MusicPlayerPartialStateChange {
     ) : MusicPlayerPartialStateChange()
     data class SeekToPartialStateChange(val position: Int) : MusicPlayerPartialStateChange()
     data class CurrentPositionPartialStateChange(val position: Int) : MusicPlayerPartialStateChange()
-}
-
-sealed class MusicPlayerSideEffect {
-    data class ShowErrorSideEffect(val errorMessage: String) : MusicPlayerSideEffect()
 }
