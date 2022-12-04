@@ -40,13 +40,12 @@ sealed class MusicPlayerIntent {
     object PlayIntent : MusicPlayerIntent()
     object PauseIntent : MusicPlayerIntent()
     data class NewSongIntent(val songId: Int) : MusicPlayerIntent()
-    object SongCompletedIntent : MusicPlayerIntent()
     object NextSongIntent : MusicPlayerIntent()
     object PreviousSongIntent : MusicPlayerIntent()
     object SeekForwardIntent : MusicPlayerIntent()
     object SeekBackwardIntent : MusicPlayerIntent()
     data class SeekToIntent(val position: Int) : MusicPlayerIntent()
-    data class CurrentPositionIntent(val position: Int): MusicPlayerIntent()
+    data class SongTickerIntent(val position: Int): MusicPlayerIntent()
 }
 
 sealed class MusicPlayerPartialStateChange {

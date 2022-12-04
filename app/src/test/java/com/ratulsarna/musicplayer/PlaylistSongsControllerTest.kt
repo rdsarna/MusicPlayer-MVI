@@ -4,15 +4,17 @@ import com.ratulsarna.musicplayer.repository.model.Playlist
 import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
 import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryMock
 import com.ratulsarna.musicplayer.repository.model.Song
-import com.ratulsarna.musicplayer.controllers.UpNextSongsController
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
 import org.junit.Test
 
 import org.junit.Assert.*
 
-class UpNextSongsControllerTest {
+class PlaylistSongsControllerTest {
 
     private val testSongs = listOf(
         PlaylistSongWrapper(0, Song(
+            0,
             "Levitating",
             "Dua Lipa feat. DaBaby",
             2020,
@@ -21,6 +23,7 @@ class UpNextSongsControllerTest {
         )
         ),
         PlaylistSongWrapper(1, Song(
+            1,
             "Drinkee",
             "Sofi Tukker",
             2016,
@@ -29,6 +32,7 @@ class UpNextSongsControllerTest {
         )
         ),
         PlaylistSongWrapper(2, Song(
+            2,
             "Fireflies",
             "Owl City",
             2009,
@@ -43,7 +47,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             assertNull(currentSong())
             assertNull(nextSong())
             assertNull(previousSong())
@@ -57,10 +61,11 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        val controller = UpNextSongsController(playlistsRepository)
+        val controller = PlaylistSongsControllerDefault(playlistsRepository)
 
         val expectedList = listOf(
             Song(
+                0,
                 "Drinkee",
                 "Sofi Tukker",
                 2016,
@@ -68,6 +73,7 @@ class UpNextSongsControllerTest {
                 R.raw.sofi_tukker_drinkee,
             ),
             Song(
+                1,
                 "Fireflies",
                 "Owl City",
                 2009,
@@ -83,7 +89,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[0].song, currentSong())
         }
@@ -94,7 +100,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[1].song, peekNextSong())
             assertEquals(testSongs[0].song, currentSong())
@@ -106,7 +112,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[1].song, nextSong())
             assertEquals(testSongs[1].song, currentSong())
@@ -118,7 +124,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[1].song, nextSong())
             assertEquals(testSongs[1].song, currentSong())
@@ -132,7 +138,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[2].song, newSong(R.raw.owl_city_fireflies))
             assertEquals(testSongs[2].song, currentSong())
@@ -144,7 +150,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertNull(newSong(0))
             assertEquals(testSongs[0].song, currentSong())
@@ -156,7 +162,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[1].song, nextSong())
             assertEquals(testSongs[2].song, nextSong())
@@ -170,7 +176,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[2].song, previousSong())
             assertEquals(testSongs[2].song, currentSong())
@@ -182,7 +188,7 @@ class UpNextSongsControllerTest {
         val playlistsRepository = PlaylistsRepositoryMock(
             Playlist(testSongs, 0, 0)
         )
-        UpNextSongsController(playlistsRepository).apply {
+        PlaylistSongsControllerDefault(playlistsRepository).apply {
             loadDefaultPlaylistSongs()
             assertEquals(testSongs[1].song, nextSong())
             assertEquals(testSongs[2].song, nextSong())

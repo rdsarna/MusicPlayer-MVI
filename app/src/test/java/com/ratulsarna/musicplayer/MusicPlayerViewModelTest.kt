@@ -1,28 +1,42 @@
 package com.ratulsarna.musicplayer
 
+import com.ratulsarna.musicplayer.controllers.MediaPlayerCommand
+import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
+import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock.Companion.TEST_SONG_DURATION
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
 import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryMock
 import com.ratulsarna.musicplayer.repository.model.Playlist
 import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
 import com.ratulsarna.musicplayer.repository.model.Song
-import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.ForceScreenOnSideEffect
-import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.ShowErrorSideEffect
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
-import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
+import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
-import com.ratulsarna.musicplayer.controllers.MediaPlayerCommand
-import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
-import com.ratulsarna.musicplayer.controllers.UpNextSongsController
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
-import com.ratulsarna.musicplayer.utils.SchedulerProviderTrampoline
+import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
+import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
+import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import kotlin.coroutines.CoroutineContext
+import kotlin.math.roundToInt
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MusicPlayerViewModelTest {
 
     private val testSongs = listOf(
         PlaylistSongWrapper(0, Song(
+            0,
             "Levitating",
             "Dua Lipa feat. DaBaby",
             2020,
@@ -30,6 +44,7 @@ class MusicPlayerViewModelTest {
             R.raw.dua_lipa_levitating,
         )),
         PlaylistSongWrapper(1, Song(
+            1,
             "Drinkee",
             "Sofi Tukker",
             2016,
@@ -37,6 +52,7 @@ class MusicPlayerViewModelTest {
             R.raw.sofi_tukker_drinkee,
         )),
         PlaylistSongWrapper(2, Song(
+            2,
             "Fireflies",
             "Owl City",
             2009,
@@ -45,384 +61,342 @@ class MusicPlayerViewModelTest {
         )),
     )
 
+    private val testDispatcher = ImmediateTestDispatcher()
     private lateinit var viewModel: MusicPlayerViewModel
-    private val upNextSongsController = UpNextSongsController(
+    private val playlistSongsController = PlaylistSongsControllerDefault(
         PlaylistsRepositoryMock(Playlist(testSongs, 0, 0))
     )
     private lateinit var mediaPlayerController: MediaPlayerControllerMock
-    private val schedulerProvider = SchedulerProviderTrampoline()
+    private val playlist = testSongs.map { it.song.toPlaylistViewSong() }.toImmutableList()
+
+    private lateinit var stateJob: Job
+    private lateinit var effectsJob: Job
 
     @Before
     fun setup() {
+        Dispatchers.setMain(testDispatcher)
         mediaPlayerController = MediaPlayerControllerMock()
+        val coroutineContextProvider = object : CoroutineContextProvider {
+            override val main: CoroutineContext = testDispatcher
+            override val io: CoroutineContext = testDispatcher
+        }
+        viewModel = MusicPlayerViewModel(playlistSongsController, mediaPlayerController, coroutineContextProvider)
+    }
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun TestScope.collectStateAndSideEffectsAsLists(): Pair<List<MusicPlayerViewState>, List<MusicPlayerSideEffect>> {
+        val actualStates = mutableListOf<MusicPlayerViewState>()
+        stateJob = launch(testDispatcher) {
+            viewModel.viewState.collect(actualStates::add)
+        }
+        val actualEffects = mutableListOf<MusicPlayerSideEffect>()
+        effectsJob = launch(testDispatcher) {
+            viewModel.sideEffects.collect(actualEffects::add)
+        }
+        return actualStates to actualEffects
+    }
+
+    private fun endCollection() {
+        stateJob.cancel()
+        effectsJob.cancel()
     }
 
     @Test
-    fun `onSubscribing, should receive starting ViewState`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
+    fun `onSubscribing, should receive starting ViewState`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
+        endCollection()
 
-        val viewStateTester = viewModel.viewState.test()
-        viewStateTester.assertValueCount(1)
+        assertEquals(1, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(MusicPlayerViewState.INITIAL, states[0])
     }
 
     @Test
-    fun `UiCreateEvent, loads playlist`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `UiCreateIntent, loads playlist`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.processInput(UiCreateIntent)
 
-        viewStateTester.assertValueAt(1) { vs ->
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        assertEquals(2, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState.INITIAL.copy(
+                playlist = playlist
+            ),
+            states[1]
+        )
     }
 
     @Test
-    fun `calling UiStartEvent before UiCreateEvent results in initial ViewState only`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `calling UiStartIntent before UiCreateIntent results in initial ViewState only`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.processInput(UiStartIntent)
 
-        viewStateTester.assertValueAt(0) { vs ->
-            assertEquals(
-                MusicPlayerViewState.INITIAL,
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        assertEquals(1, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(MusicPlayerViewState.INITIAL, states[0])
     }
 
     @Test
-    fun `UiStartEvent, loads song and sets song details to ViewState`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `UiStartIntent, loads song and sets song details to ViewState`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.processInput(UiCreateIntent)
         viewModel.processInput(UiStartIntent)
 
-        viewStateTester.assertValueAt(3) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(3, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState.INITIAL.copy(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong
+            ),
+            states[2]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
     }
 
     @Test
-    fun `PlayEvent, plays song via media player and sets playing true in ViewState`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
-
-        viewModel.processInput(UiCreateIntent)
-        viewModel.processInput(UiStartIntent)
-        viewModel.processInput(PlayIntent)
-
-        viewStateTester.assertValueAt(4) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
-
-        assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
-        assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
-        assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
-
-        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
-    }
-
-    @Test
-    fun `PauseEvent, pauses song via media player and sets playing false in ViewState`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
+    fun `PlayIntent, plays song via media player and sets playing true in ViewState`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(CurrentPositionIntent(5))
+        }
+
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(4, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[3]
+        )
+
+        assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
+        assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
+        assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
+    }
+
+    @Test
+    fun `PauseIntent, pauses song via media player and sets playing false in ViewState`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
+
+        viewModel.apply {
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
             processInput(PauseIntent)
         }
 
-        viewStateTester.assertValueAt(6) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 5,
-                    playing = false,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(5, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[4]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
         assertEquals(MediaPlayerCommand.Pause, mediaPlayerController.commands[3])
-
-        assertEquals(ForceScreenOnSideEffect(false), viewEffectTester.values().last())
     }
 
     @Test
-    fun `NextSongEvent, loads and plays next song from beginning`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
+    fun `NextSongIntent, loads and plays next song from beginning`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(CurrentPositionIntent(5))
             processInput(NextSongIntent)
         }
 
-        viewStateTester.assertValueAt(7) { vs ->
-            val song = testSongs[1].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 0,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[2].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[1].song.toPlaylistViewSong()
+
+        assertEquals(6, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[5]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
-
-        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
-    fun `PreviousSongEvent, loads and plays previous song from beginning`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
+    fun `PreviousSongIntent, loads and plays previous song from beginning`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(CurrentPositionIntent(5))
             processInput(PreviousSongIntent)
         }
 
-        viewStateTester.assertValueAt(7) { vs ->
-            val song = testSongs[2].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 0,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[0].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[2].song.toPlaylistViewSong()
+
+        assertEquals(6, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[5]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
-
-        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
-    fun `NewSongEvent, loads and plays new song from beginning`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
+    fun `NewSongIntent, loads and plays new song from beginning`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(CurrentPositionIntent(5))
-            processInput(NewSongIntent(R.raw.owl_city_fireflies))
+            processInput(NewSongIntent(2))
         }
 
-        viewStateTester.assertValueAt(7) { vs ->
-            val song = testSongs[2].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 0,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[0].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[2].song.toPlaylistViewSong()
+
+        assertEquals(6, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[5]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
         assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
-
-        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
     }
 
     @Test
-    fun `SongCompletedEvent, loads and plays next song from beginning since current song is playing`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
+    fun `SeekForwardIntent, seeks forward by SEEK_DURATION and continues playing`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(CurrentPositionIntent(TEST_SONG_DURATION.toInt()))
-            processInput(SongCompletedIntent)
-        }
-
-        viewStateTester.assertValueAt(7) { vs ->
-            val song = testSongs[1].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 0,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[2].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
-
-        assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
-        assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
-        assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[2])
-        assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[3])
-        assertEquals(MediaPlayerCommand.Start, mediaPlayerController.commands[4])
-
-        assertEquals(ForceScreenOnSideEffect(true), viewEffectTester.values().last())
-    }
-
-    @Test
-    fun `SeekForwardEvent, seeks forward by SEEK_DURATION and continues playing`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
-
-        mediaPlayerController._currentPosition = 2000
-        viewModel.apply {
-            processInput(UiCreateIntent)
-            processInput(UiStartIntent)
-            processInput(PlayIntent)
-            processInput(CurrentPositionIntent(2000))
             processInput(SeekForwardIntent)
         }
 
-        viewStateTester.assertValueAt(6) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 7000,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(5, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 5000,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[4]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -431,39 +405,38 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `SeekBackwardEvent, seeks backward by SEEK_DURATION and continues playing`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `SeekBackwardIntent, seeks backward by SEEK_DURATION and continues playing`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(CurrentPositionIntent(10000))
+            processInput(SongTickerIntent(10000))
             processInput(SeekBackwardIntent)
         }
 
-        viewStateTester.assertValueAt(6) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 5000,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(6, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 5000,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[5]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -472,37 +445,36 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `SeekToEvent, seeks to specified position and continues playing`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `SeekToIntent, seeks to specified position and continues playing`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(SeekToIntent((TEST_SONG_DURATION/2).toInt()))
+            processInput(SeekToIntent((TEST_SONG_DURATION/2).roundToInt()))
         }
 
-        viewStateTester.assertValueAt(5) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = (TEST_SONG_DURATION/2).toInt(),
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(5, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = (TEST_SONG_DURATION / 2).roundToInt(),
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[4]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -511,38 +483,35 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `SeekForwardEvent, currently not playing so only seeks forward by SEEK_DURATION`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
+    fun `SeekForwardIntent, currently not playing so only seeks forward by SEEK_DURATION`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
-        val viewStateTester = viewModel.viewState.test()
-
-        mediaPlayerController._currentPosition = 2000
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
-            processInput(CurrentPositionIntent(2000))
             processInput(SeekForwardIntent)
         }
 
-        viewStateTester.assertValueAt(5) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 7000,
-                    playing = false,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(4, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 5000,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[3]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -550,38 +519,36 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `SeekBackwardEvent, currently not playing so only seeks backward by SEEK_DURATION`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `SeekBackwardIntent, currently not playing so only seeks backward by SEEK_DURATION`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
-            processInput(CurrentPositionIntent(10000))
             processInput(SeekBackwardIntent)
         }
 
-        viewStateTester.assertValueAt(5) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 5000,
-                    playing = false,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(4, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 5000,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[3]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -589,36 +556,35 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `SeekToEvent, currently not playing so only seeks to specified position`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `SeekToIntent, currently not playing so only seeks to specified position`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
-            processInput(SeekToIntent((TEST_SONG_DURATION/2).toInt()))
+            processInput(SeekToIntent((TEST_SONG_DURATION/2).roundToInt()))
         }
 
-        viewStateTester.assertValueAt(4) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = (TEST_SONG_DURATION/2).toInt(),
-                    playing = false,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(4, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = (TEST_SONG_DURATION / 2).roundToInt(),
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[3]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -626,10 +592,8 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `UiStopEvent, song is playing, should release media player but state should remain playing`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `UiStopIntent, song is playing, should release media player but state should remain playing`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
@@ -638,24 +602,26 @@ class MusicPlayerViewModelTest {
             processInput(UiStopIntent)
         }
 
-        viewStateTester.assertValueAt(4) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(4, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[3]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -665,10 +631,8 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `UiStopEvent, song is not playing, should release media player`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `UiStopIntent, song is not playing, should release media player`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
@@ -676,24 +640,26 @@ class MusicPlayerViewModelTest {
             processInput(UiStopIntent)
         }
 
-        viewStateTester.assertValueAt(3) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    playing = false,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(3, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[2]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -702,40 +668,39 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `UiStartEvent after UiStopEvent while player was playing, should load same song and continue playing from same time`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `UiStartIntent after UiStopIntent while player was playing, should load same song and continue playing from same time`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(CurrentPositionIntent(10000))
+            processInput(SongTickerIntent(10000))
             processInput(UiStopIntent)
             processInput(UiStartIntent)
         }
 
-        viewStateTester.assertValueAt(7) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 10000,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(5, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 10000,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[4]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -749,39 +714,38 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `UiStartEvent after UiStopEvent while player was paused, should load same song from same elapsed time`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `UiStartIntent after UiStopIntent while player was paused, should load same song from same elapsed time`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         mediaPlayerController._currentPosition = 10000
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
-            processInput(CurrentPositionIntent(10000))
+            processInput(SongTickerIntent(10000))
             processInput(UiStopIntent)
             processInput(UiStartIntent)
         }
 
-        viewStateTester.assertValueAt(6) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 10000,
-                    playing = false,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(4, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 10000,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[3]
+        )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
         assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
@@ -792,10 +756,8 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
-    fun `NextSongEvent, chain of multiple next songs, should land on expected song`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
-
-        val viewStateTester = viewModel.viewState.test()
+    fun `NextSongIntent, chain of multiple next songs, should land on expected song`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         viewModel.apply {
             processInput(UiCreateIntent)
@@ -811,133 +773,203 @@ class MusicPlayerViewModelTest {
             processInput(NextSongIntent)
         }
 
-        viewStateTester.assertValueAt(20) { vs ->
-            val song = testSongs[2].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 0,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[0].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
+
+        val expectedSong = testSongs[2].song.toPlaylistViewSong()
+
+        assertEquals(20, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = true
+            ),
+            states[19]
+        )
     }
 
     @Test
-    fun `UiStartEvent, loading song fails, should show toast`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
+    fun `UiStartIntent, loading song fails, should show toast`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         mediaPlayerController._loadNewSongResultsInError = true
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
-
         viewModel.processInput(UiCreateIntent)
         viewModel.processInput(UiStartIntent)
 
-        viewStateTester.assertValueAt(1) { vs ->
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
 
-        assertTrue { viewEffectTester.values().last() is ShowErrorSideEffect }
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(3, states.size)
+        assertEquals(1, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = MINIMUM_DURATION.toFloat(),
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[2]
+        )
+        assertEquals(
+            MusicPlayerSideEffect.ShowErrorSideEffect("Error loading song. Try next song."),
+            sideEffects[0]
+        )
     }
 
     @Test
-    fun `NewSongEvent, loading song fails, should show toast`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
+    fun `NewSongIntent, loading song fails, should show toast`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         mediaPlayerController._loadNewSongResultsInError = true
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
-
         viewModel.processInput(UiCreateIntent)
-        viewModel.processInput(NewSongIntent(R.raw.dua_lipa_levitating))
+        viewModel.processInput(NewSongIntent(2))
 
-        viewStateTester.assertValueAt(1) { vs ->
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
+        endCollection()
 
-        assertTrue { viewEffectTester.values().last() is ShowErrorSideEffect }
+        val expectedSong = testSongs[2].song.toPlaylistViewSong()
+
+        assertEquals(3, states.size)
+        assertEquals(1, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                elapsedTime = 0,
+                totalDuration = MINIMUM_DURATION.toFloat(),
+                playlist = playlist,
+                currentPlaylistSong = expectedSong,
+                playing = false
+            ),
+            states[2]
+        )
+        assertEquals(
+            MusicPlayerSideEffect.ShowErrorSideEffect("Error loading song. Try next song."),
+            sideEffects[0]
+        )
     }
 
     @Test
-    fun `UiStartEvent, loading song fails, should show toast, NextSongEvent succeeds, should update ViewState`() {
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, schedulerProvider)
+    fun `UiStartIntent, loading song fails, should show toast, NextSongIntent succeeds, should update ViewState`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
 
         mediaPlayerController._loadNewSongResultsInError = true
-
-        val viewStateTester = viewModel.viewState.test()
-        val viewEffectTester = viewModel.viewEffects.test()
-
         viewModel.processInput(UiCreateIntent)
         viewModel.processInput(UiStartIntent)
-
-        viewStateTester.assertValueAt(2) { vs ->
-            val song = testSongs[0].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = 1f,
-                    nextSongLabel = "Up Next: ${testSongs[1].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
-        }
-
-        assertTrue { viewEffectTester.values().last() is ShowErrorSideEffect }
-
         mediaPlayerController._loadNewSongResultsInError = false
         viewModel.processInput(NextSongIntent)
 
-        viewStateTester.assertValueAt(4) { vs ->
-            val song = testSongs[1].song.toPlaylistViewSong()
-            assertEquals(
-                MusicPlayerViewState.INITIAL.copy(
-                    loading = false,
-                    songTitle = song.title,
-                    songInfoLabel = song.infoLabel,
-                    albumArt = song.albumArt,
-                    totalDuration = TEST_SONG_DURATION,
-                    elapsedTime = 0,
-                    playing = true,
-                    nextSongLabel = "Up Next: ${testSongs[2].song.title}",
-                    upNextSongs = upNextSongsController.currentPlaylist()
-                        .map { it.toPlaylistViewSong() }
-                ),
-                vs
-            )
-            true
+
+        endCollection()
+
+        val expectedSong1 = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(5, states.size)
+        assertEquals(1, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong1.title,
+                songInfoLabel = expectedSong1.infoLabel,
+                albumArt = expectedSong1.albumArt,
+                elapsedTime = 0,
+                totalDuration = MINIMUM_DURATION.toFloat(),
+                playlist = playlist,
+                currentPlaylistSong = expectedSong1,
+                playing = false
+            ),
+            states[2]
+        )
+
+        val expectedSong2 = testSongs[1].song.toPlaylistViewSong()
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong2.title,
+                songInfoLabel = expectedSong2.infoLabel,
+                albumArt = expectedSong2.albumArt,
+                elapsedTime = 0,
+                totalDuration = TEST_SONG_DURATION,
+                playlist = playlist,
+                currentPlaylistSong = expectedSong2,
+                playing = true
+            ),
+            states[4]
+        )
+        assertEquals(
+            MusicPlayerSideEffect.ShowErrorSideEffect("Error loading song. Try next song."),
+            sideEffects[0]
+        )
+    }
+
+    @Test
+    fun `SongTickerIntent, ticker increments and updates the elapsed time in ViewState`() = runTest {
+        val (states, sideEffects) = collectStateAndSideEffectsAsLists()
+
+        viewModel.apply {
+            processInput(UiCreateIntent)
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(SongTickerIntent(1000))
+            processInput(SongTickerIntent(2000))
+            processInput(SongTickerIntent(3000))
+            processInput(SongTickerIntent(4000))
+            processInput(SongTickerIntent(5000))
+            processInput(SongTickerIntent(6000))
+            processInput(SongTickerIntent(7000))
         }
+
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(11, states.size)
+        assertEquals(0, sideEffects.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                totalDuration = TEST_SONG_DURATION,
+                elapsedTime = 1000,
+                playing = true,
+                currentPlaylistSong = expectedSong,
+                playlist = playlist,
+            ),
+            states[4]
+        )
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                totalDuration = TEST_SONG_DURATION,
+                elapsedTime = 7000,
+                playing = true,
+                currentPlaylistSong = expectedSong,
+                playlist = playlist,
+            ),
+            states[10]
+        )
+
+        assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
+        assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
     }
 
     companion object {

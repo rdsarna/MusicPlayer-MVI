@@ -8,6 +8,8 @@ import com.ratulsarna.musicplayer.repository.SongsRepository
 import com.ratulsarna.musicplayer.repository.SongsRepositoryDefault
 import com.ratulsarna.musicplayer.controllers.MediaPlayerController
 import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerDefault
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.CoroutineContextProviderDefault
 import dagger.Module
@@ -30,6 +32,10 @@ class AppModule {
 
     @Provides
     fun provideMediaPlayerController(impl: MediaPlayerControllerDefault): MediaPlayerController = impl
+
+    @Singleton
+    @Provides
+    fun providePlaylistSongsController(impl: PlaylistSongsControllerDefault): PlaylistSongsController = impl
 
     @Singleton
     @Provides
