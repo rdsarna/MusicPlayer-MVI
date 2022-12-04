@@ -4,7 +4,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ratulsarna.musicplayer.controllers.MediaPlayerController
-import com.ratulsarna.musicplayer.controllers.UpNextSongsController
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
 import com.ratulsarna.musicplayer.repository.model.Song
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
@@ -25,7 +25,7 @@ import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MusicPlayerViewModel @Inject constructor(
-    private val upNextSongsController: UpNextSongsController,
+    private val playlistSongsController: PlaylistSongsController,
     private val mediaPlayerController: MediaPlayerController,
     private val coroutineContextProvider: CoroutineContextProvider,
 ) : ViewModel() {
@@ -135,8 +135,8 @@ class MusicPlayerViewModel @Inject constructor(
         flow.transformLatest {
             // emit some loading state if loading playlist and song takes time
 
-            upNextSongsController.loadDefaultPlaylistSongs()
-            val currentSong = upNextSongsController.currentSong()
+            playlistSongsController.loadDefaultPlaylistSongs()
+            val currentSong = playlistSongsController.currentSong()
 
             val loadSuccess = withContext(coroutineContextProvider.io) {
                 mediaPlayerController.loadNewSong(currentSong)
@@ -149,7 +149,7 @@ class MusicPlayerViewModel @Inject constructor(
             } else false
             emit(
                 UiStartPartialStateChange(
-                    upNextSongsController.currentSong(),
+                    playlistSongsController.currentSong(),
                     duration,
                     playing = playing,
                     errorLoadingSong = !loadSuccess,
@@ -179,12 +179,12 @@ class MusicPlayerViewModel @Inject constructor(
 
     private fun onNextSong(flow: Flow<NextSongIntent>): Flow<NewSongPartialStateChange> =
         flow.map {
-            upNextSongsController.nextSong()
+            playlistSongsController.nextSong()
         }.newSongResultFromSong()
 
     private fun onPreviousSong(flow: Flow<PreviousSongIntent>): Flow<NewSongPartialStateChange> =
         flow.map {
-            upNextSongsController.previousSong()
+            playlistSongsController.previousSong()
         }.newSongResultFromSong()
 
     private fun onSeekTo(flow: Flow<SeekToIntent>): Flow<SeekToPartialStateChange> =

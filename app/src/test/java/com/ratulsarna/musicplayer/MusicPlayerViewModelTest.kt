@@ -9,8 +9,8 @@ import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
 import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
 import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
-import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock.Companion.TEST_SONG_DURATION
-import com.ratulsarna.musicplayer.controllers.UpNextSongsController
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
+import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import kotlinx.coroutines.Dispatchers
@@ -59,7 +59,7 @@ class MusicPlayerViewModelTest {
 
     private val testDispatcher = ImmediateTestDispatcher()
     private lateinit var viewModel: MusicPlayerViewModel
-    private val upNextSongsController = UpNextSongsController(
+    private val playlistSongsController = PlaylistSongsControllerDefault(
         PlaylistsRepositoryMock(Playlist(testSongs, 0, 0))
     )
     private lateinit var mediaPlayerController: MediaPlayerControllerMock
@@ -74,7 +74,7 @@ class MusicPlayerViewModelTest {
             override val main: CoroutineContext = testDispatcher
             override val io: CoroutineContext = testDispatcher
         }
-        viewModel = MusicPlayerViewModel(upNextSongsController, mediaPlayerController, coroutineContextProvider)
+        viewModel = MusicPlayerViewModel(playlistSongsController, mediaPlayerController, coroutineContextProvider)
     }
     @After
     fun tearDown() {
