@@ -13,6 +13,7 @@ class UpNextSongsController @Inject constructor(
     private var _currentSongPosition = 0
 
     fun loadDefaultPlaylistSongs(): List<Song> {
+        _currentPlaylist?.let { return playlist() }
         _currentPlaylist = playlistsRepository.getDefaultPlaylist()
         require(_currentPlaylist?.songs?.isNotEmpty() == true)
         return playlist()
