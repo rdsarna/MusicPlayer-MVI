@@ -334,6 +334,56 @@ class MusicPlayerViewModelTest {
     }
 
     @Test
+    fun `SongTickerIntent, ticker increments and updates the elapsed time in ViewState`() = runTest {
+        val states = collectStateAsList()
+
+        viewModel.apply {
+            processInput(UiStartIntent)
+            processInput(PlayIntent)
+            processInput(SongTickerIntent(1000))
+            processInput(SongTickerIntent(2000))
+            processInput(SongTickerIntent(3000))
+            processInput(SongTickerIntent(4000))
+            processInput(SongTickerIntent(5000))
+            processInput(SongTickerIntent(6000))
+            processInput(SongTickerIntent(7000))
+        }
+
+        endCollection()
+
+        val expectedSong = testSongs[0].song.toPlaylistViewSong()
+
+        assertEquals(10, states.size)
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                totalDuration = TEST_SONG_DURATION,
+                elapsedTime = 1000,
+                playing = true,
+            ),
+            states[3]
+        )
+        assertEquals(
+            MusicPlayerViewState(
+                loading = false,
+                songTitle = expectedSong.title,
+                songInfoLabel = expectedSong.infoLabel,
+                albumArt = expectedSong.albumArt,
+                totalDuration = TEST_SONG_DURATION,
+                elapsedTime = 7000,
+                playing = true,
+            ),
+            states[9]
+        )
+
+        assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
+        assertEquals(MediaPlayerCommand.LoadSong, mediaPlayerController.commands[1])
+    }
+
+    @Test
     fun `NextSongIntent, chain of multiple next songs, should land on expected song`() = runTest {
         val states = collectStateAsList()
 

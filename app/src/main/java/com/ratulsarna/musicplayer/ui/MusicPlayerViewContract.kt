@@ -3,9 +3,6 @@ package com.ratulsarna.musicplayer.ui
 import androidx.annotation.DrawableRes
 import com.ratulsarna.musicplayer.R
 import com.ratulsarna.musicplayer.repository.model.Song
-import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 
 data class MusicPlayerViewState(
     val loading: Boolean,
@@ -37,7 +34,7 @@ sealed class MusicPlayerIntent {
     object NextSongIntent : MusicPlayerIntent()
     object PreviousSongIntent : MusicPlayerIntent()
     data class SeekToIntent(val position: Int) : MusicPlayerIntent()
-    data class CurrentPositionIntent(val position: Int): MusicPlayerIntent()
+    data class SongTickerIntent(val position: Int): MusicPlayerIntent()
 }
 
 sealed class MusicPlayerPartialStateChange {

@@ -58,7 +58,7 @@ class MusicPlayerViewModel @Inject constructor(
                 oneSecondIntervalJob = interval(1000, TimeUnit.MILLISECONDS).map {
                     mediaPlayerController.getCurrentPosition()
                 }.onEach {
-                    processInput(CurrentPositionIntent(it))
+                    processInput(SongTickerIntent(it))
                 }.launchIn(viewModelScope)
             },
             pausedStoppedListener = {
@@ -194,7 +194,7 @@ class MusicPlayerViewModel @Inject constructor(
             )
         }
 
-    private fun onCurrentPosition(flow: Flow<CurrentPositionIntent>): Flow<CurrentPositionPartialStateChange> =
+    private fun onCurrentPosition(flow: Flow<SongTickerIntent>): Flow<CurrentPositionPartialStateChange> =
         flow.map { CurrentPositionPartialStateChange(it.position) }
 
     private fun Flow<Song?>.newSongResultFromSong(): Flow<NewSongPartialStateChange> =
