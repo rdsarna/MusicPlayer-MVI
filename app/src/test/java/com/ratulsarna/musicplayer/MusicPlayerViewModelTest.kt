@@ -122,7 +122,9 @@ class MusicPlayerViewModelTest {
                 albumArt = expectedSong.albumArt,
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 0,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00",
             ),
             states[1]
         )
@@ -152,6 +154,8 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 0,
                 playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00",
             ),
             states[2]
         )
@@ -185,6 +189,8 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 0,
                 playing = false,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00",
             ),
             states[3]
         )
@@ -202,6 +208,7 @@ class MusicPlayerViewModelTest {
         viewModel.apply {
             processInput(UiStartIntent)
             processInput(PlayIntent)
+            processInput(SongTickerIntent(5000))
             processInput(NextSongIntent)
         }
 
@@ -210,7 +217,7 @@ class MusicPlayerViewModelTest {
         // expect second song
         val expectedSong = testSongs[1].song.toPlaylistViewSong()
 
-        assertEquals(5, states.size)
+        assertEquals(6, states.size)
         assertEquals(
             MusicPlayerViewState(
                 loading = false,
@@ -220,8 +227,10 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 0,
                 playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00",
             ),
-            states[4]
+            states[5]
         )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
@@ -238,6 +247,7 @@ class MusicPlayerViewModelTest {
         viewModel.apply {
             processInput(UiStartIntent)
             processInput(PlayIntent)
+            processInput(SongTickerIntent(5000))
             processInput(PreviousSongIntent)
         }
 
@@ -246,7 +256,7 @@ class MusicPlayerViewModelTest {
         // expect previous/last song
         val expectedSong = testSongs[2].song.toPlaylistViewSong()
 
-        assertEquals(5, states.size)
+        assertEquals(6, states.size)
         assertEquals(
             MusicPlayerViewState(
                 loading = false,
@@ -256,8 +266,10 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 0,
                 playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00",
             ),
-            states[4]
+            states[5]
         )
 
         assertEquals(MediaPlayerCommand.Init, mediaPlayerController.commands[0])
@@ -274,7 +286,7 @@ class MusicPlayerViewModelTest {
         viewModel.apply {
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(SeekToIntent((TEST_SONG_DURATION/2).toInt()))
+            processInput(SeekToIntent((TEST_SONG_DURATION/2f)))
         }
 
         endCollection()
@@ -289,8 +301,10 @@ class MusicPlayerViewModelTest {
                 songInfoLabel = expectedSong.infoLabel,
                 albumArt = expectedSong.albumArt,
                 totalDuration = TEST_SONG_DURATION,
-                elapsedTime = (TEST_SONG_DURATION/2).toInt(),
+                elapsedTime = (TEST_SONG_DURATION/2),
                 playing = true,
+                elapsedTimeLabel = "0:30",
+                totalTimeLabel = "1:00",
             ),
             states[3]
         )
@@ -307,7 +321,7 @@ class MusicPlayerViewModelTest {
 
         viewModel.apply {
             processInput(UiStartIntent)
-            processInput(SeekToIntent((TEST_SONG_DURATION/2).toInt()))
+            processInput(SeekToIntent((TEST_SONG_DURATION/2f)))
         }
 
         endCollection()
@@ -322,8 +336,10 @@ class MusicPlayerViewModelTest {
                 songInfoLabel = expectedSong.infoLabel,
                 albumArt = expectedSong.albumArt,
                 totalDuration = TEST_SONG_DURATION,
-                elapsedTime = (TEST_SONG_DURATION/2).toInt(),
+                elapsedTime = (TEST_SONG_DURATION/2),
                 playing = false,
+                elapsedTimeLabel = "0:30",
+                totalTimeLabel = "1:00",
             ),
             states[2]
         )
@@ -363,6 +379,8 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 1000,
                 playing = true,
+                elapsedTimeLabel = "0:01",
+                totalTimeLabel = "1:00",
             ),
             states[3]
         )
@@ -375,6 +393,8 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 7000,
                 playing = true,
+                elapsedTimeLabel = "0:07",
+                totalTimeLabel = "1:00",
             ),
             states[9]
         )
@@ -414,12 +434,14 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 elapsedTime = 0,
                 playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00",
             ),
             states[18]
         )
     }
 
     companion object {
-        private const val TEST_SONG_DURATION = 60 * 1000f
+        private const val TEST_SONG_DURATION = 60 * 1000L
     }
 }

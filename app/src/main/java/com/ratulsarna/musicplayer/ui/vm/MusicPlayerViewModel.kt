@@ -22,6 +22,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MusicPlayerViewModel @Inject constructor(
@@ -56,7 +57,7 @@ class MusicPlayerViewModel @Inject constructor(
         mediaPlayerController.init(
             startedListener = {
                 oneSecondIntervalJob = interval(1000, TimeUnit.MILLISECONDS).map {
-                    mediaPlayerController.getCurrentPosition()
+                    mediaPlayerController.getCurrentPosition().toLong()
                 }.onEach {
                     processInput(SongTickerIntent(it))
                 }.launchIn(viewModelScope)
@@ -95,38 +96,50 @@ class MusicPlayerViewModel @Inject constructor(
     }
 
     private fun Flow<MusicPlayerPartialStateChange>.partialChangeToViewState(): Flow<MusicPlayerViewState> {
-        return scan(MusicPlayerViewState.INITIAL) { vs, result ->
-            when (result) {
-                is UiStartPartialStateChange -> result.song?.let { song ->
+        return scan(MusicPlayerViewState.INITIAL) { vs, partialStateChange ->
+            when (partialStateChange) {
+                is UiStartPartialStateChange -> partialStateChange.song?.let { song ->
+                    val totalDuration = partialStateChange.duration
                     vs.copy(
                         loading = false,
                         songTitle = song.title,
                         songInfoLabel = "${song.artistName} | ${song.year}",
                         albumArt = song.albumArtResId,
-                        totalDuration = result.duration.toFloat(),
-                        playing = result.playing ?: vs.playing,
+                        totalDuration = totalDuration,
+                        playing = partialStateChange.playing ?: vs.playing,
+                        elapsedTimeLabel = vs.elapsedTime.getTimeLabel(),
+                        totalTimeLabel = totalDuration.getTimeLabel(),
                     )
                 } ?: vs
                 is NewSongPartialStateChange -> {
-                    result.song?.let { song ->
+                    partialStateChange.song?.let { song ->
+                        val totalDuration = if (partialStateChange.duration == -1L) vs.totalDuration else partialStateChange.duration
                         vs.copy(
                             loading = false,
                             songTitle = song.title,
                             songInfoLabel = "${song.artistName} | ${song.year}",
                             albumArt = song.albumArtResId,
-                            elapsedTime = 0,
-                            totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
-                            playing = result.playing,
+                            elapsedTime = 0L,
+                            totalDuration = totalDuration,
+                            playing = partialStateChange.playing,
+                            elapsedTimeLabel = 0L.getTimeLabel(),
+                            totalTimeLabel = totalDuration.getTimeLabel(),
                         )
                     } ?: vs
                 }
                 is SeekToPartialStateChange -> {
-                    vs.copy(elapsedTime = result.position)
+                    vs.copy(
+                        elapsedTime = partialStateChange.position,
+                        elapsedTimeLabel = partialStateChange.position.getTimeLabel()
+                    )
                 }
                 UiStopPartialStateChange -> vs
-                is PausePartialStateChange -> vs.copy(playing = result.playing)
-                is PlayPartialStateChange -> vs.copy(playing = result.playing)
-                is CurrentPositionPartialStateChange -> vs.copy(elapsedTime = result.position)
+                is PausePartialStateChange -> vs.copy(playing = partialStateChange.playing)
+                is PlayPartialStateChange -> vs.copy(playing = partialStateChange.playing)
+                is CurrentPositionPartialStateChange -> vs.copy(
+                    elapsedTime = partialStateChange.position,
+                    elapsedTimeLabel = partialStateChange.position.getTimeLabel()
+                )
             }
         }
     }
@@ -150,7 +163,7 @@ class MusicPlayerViewModel @Inject constructor(
             emit(
                 UiStartPartialStateChange(
                     playlistSongsController.currentSong(),
-                    duration,
+                    duration.toLong(),
                     playing = playing,
                     errorLoadingSong = !loadSuccess,
                 )
@@ -190,7 +203,7 @@ class MusicPlayerViewModel @Inject constructor(
     private fun onSeekTo(flow: Flow<SeekToIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
             SeekToPartialStateChange(
-                mediaPlayerController.seekTo(it.position)
+                mediaPlayerController.seekTo(it.position.roundToInt()).toLong()
             )
         }
 
@@ -220,12 +233,18 @@ class MusicPlayerViewModel @Inject constructor(
             emit(
                 NewSongPartialStateChange(
                     song = song,
-                    duration = duration,
+                    duration = duration.toLong(),
                     playing = playing,
                     errorLoading = !loadSuccess
                 )
             )
         }
+
+    private fun Long.getTimeLabel(): String {
+        val minutes = this / (1000 * 60)
+        val seconds = this / 1000 % 60
+        return "$minutes:${if (seconds < 10) "0$seconds" else seconds}"
+    }
 
     companion object {
         @VisibleForTesting

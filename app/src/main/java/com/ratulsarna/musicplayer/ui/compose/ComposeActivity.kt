@@ -39,7 +39,6 @@ import com.ratulsarna.musicplayer.utils.viewModelProvider
 import dagger.android.support.DaggerAppCompatActivity
 import javax.inject.Inject
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 val ImageSize = 300.dp
 
@@ -157,17 +156,16 @@ fun MusicPlayerScreenContent(
                 modifier = Modifier
                     .wrapContentHeight()
                     .fillMaxWidth(),
-                currentTimeLabel = state.elapsedTime.getTimeLabel(),
-                totalDurationTimeLabel = state.totalDuration.toInt()
-                    .getTimeLabel(),
-                totalDuration = state.totalDuration,
+                currentTimeLabel = state.elapsedTimeLabel,
+                totalDurationTimeLabel = state.totalTimeLabel,
+                totalDuration = state.totalDuration.toFloat(),
                 onSliderValueChange = {
-                    sendIntent(MusicPlayerIntent.SeekToIntent(it.roundToInt()))
+                    sendIntent(MusicPlayerIntent.SeekToIntent(it))
                 },
                 sliderValue = min(
-                    state.elapsedTime.toFloat(),
+                    state.elapsedTime,
                     state.totalDuration
-                ),
+                ).toFloat(),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Controls(
@@ -364,16 +362,12 @@ fun DefaultPreview() {
                 songTitle = "Test song",
                 songInfoLabel = "Test Artist | Dec 2020",
                 albumArt = R.drawable.placeholder,
-                totalDuration = 500000f,
+                totalDuration = 500000,
                 elapsedTime = 0,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "0:00",
             ),
             sendIntent = {}
         )
     }
-}
-
-fun Int.getTimeLabel(): String {
-    val minutes = this / (1000 * 60)
-    val seconds = this / 1000 % 60
-    return "$minutes:${if (seconds < 10) "0$seconds" else seconds}"
 }
