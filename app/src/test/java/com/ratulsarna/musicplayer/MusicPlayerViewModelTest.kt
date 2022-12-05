@@ -159,14 +159,18 @@ class MusicPlayerViewModelTest {
         assertEquals(3, states.size)
         assertEquals(0, sideEffects.size)
         assertEquals(
-            MusicPlayerViewState.INITIAL.copy(
+            MusicPlayerViewState(
                 loading = false,
+                playing = false,
                 songTitle = expectedSong.title,
                 songInfoLabel = expectedSong.infoLabel,
                 albumArt = expectedSong.albumArt,
                 totalDuration = TEST_SONG_DURATION,
+                elapsedTime = 0,
                 playlist = playlist,
-                currentPlaylistSong = expectedSong
+                currentPlaylistSong = expectedSong,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[2]
         )
@@ -201,7 +205,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[3]
         )
@@ -238,7 +244,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[4]
         )
@@ -276,7 +284,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[5]
         )
@@ -315,7 +325,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[5]
         )
@@ -354,7 +366,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[5]
         )
@@ -393,7 +407,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:05",
+                totalTimeLabel = "1:00"
             ),
             states[4]
         )
@@ -433,7 +449,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:05",
+                totalTimeLabel = "1:00"
             ),
             states[5]
         )
@@ -452,7 +470,7 @@ class MusicPlayerViewModelTest {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
             processInput(PlayIntent)
-            processInput(SeekToIntent((TEST_SONG_DURATION/2).roundToInt()))
+            processInput(SeekToIntent(TEST_SONG_DURATION/2f))
         }
 
         endCollection()
@@ -467,11 +485,13 @@ class MusicPlayerViewModelTest {
                 songTitle = expectedSong.title,
                 songInfoLabel = expectedSong.infoLabel,
                 albumArt = expectedSong.albumArt,
-                elapsedTime = (TEST_SONG_DURATION / 2).roundToInt(),
+                elapsedTime = TEST_SONG_DURATION / 2,
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:30",
+                totalTimeLabel = "1:00"
             ),
             states[4]
         )
@@ -508,7 +528,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:05",
+                totalTimeLabel = "1:00"
             ),
             states[3]
         )
@@ -545,7 +567,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:05",
+                totalTimeLabel = "1:00"
             ),
             states[3]
         )
@@ -562,7 +586,7 @@ class MusicPlayerViewModelTest {
         viewModel.apply {
             processInput(UiCreateIntent)
             processInput(UiStartIntent)
-            processInput(SeekToIntent((TEST_SONG_DURATION/2).roundToInt()))
+            processInput(SeekToIntent(TEST_SONG_DURATION/2f))
         }
 
         endCollection()
@@ -577,11 +601,13 @@ class MusicPlayerViewModelTest {
                 songTitle = expectedSong.title,
                 songInfoLabel = expectedSong.infoLabel,
                 albumArt = expectedSong.albumArt,
-                elapsedTime = (TEST_SONG_DURATION / 2).roundToInt(),
+                elapsedTime = TEST_SONG_DURATION / 2,
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:30",
+                totalTimeLabel = "1:00"
             ),
             states[3]
         )
@@ -618,7 +644,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[3]
         )
@@ -656,7 +684,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[2]
         )
@@ -697,7 +727,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:10",
+                totalTimeLabel = "1:00"
             ),
             states[4]
         )
@@ -742,7 +774,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:10",
+                totalTimeLabel = "1:00"
             ),
             states[3]
         )
@@ -789,7 +823,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[19]
         )
@@ -816,10 +852,12 @@ class MusicPlayerViewModelTest {
                 songInfoLabel = expectedSong.infoLabel,
                 albumArt = expectedSong.albumArt,
                 elapsedTime = 0,
-                totalDuration = MINIMUM_DURATION.toFloat(),
+                totalDuration = MINIMUM_DURATION.toLong(),
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "0:00"
             ),
             states[2]
         )
@@ -850,10 +888,12 @@ class MusicPlayerViewModelTest {
                 songInfoLabel = expectedSong.infoLabel,
                 albumArt = expectedSong.albumArt,
                 elapsedTime = 0,
-                totalDuration = MINIMUM_DURATION.toFloat(),
+                totalDuration = MINIMUM_DURATION.toLong(),
                 playlist = playlist,
                 currentPlaylistSong = expectedSong,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "0:00"
             ),
             states[2]
         )
@@ -887,10 +927,12 @@ class MusicPlayerViewModelTest {
                 songInfoLabel = expectedSong1.infoLabel,
                 albumArt = expectedSong1.albumArt,
                 elapsedTime = 0,
-                totalDuration = MINIMUM_DURATION.toFloat(),
+                totalDuration = MINIMUM_DURATION.toLong(),
                 playlist = playlist,
                 currentPlaylistSong = expectedSong1,
-                playing = false
+                playing = false,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "0:00"
             ),
             states[2]
         )
@@ -906,7 +948,9 @@ class MusicPlayerViewModelTest {
                 totalDuration = TEST_SONG_DURATION,
                 playlist = playlist,
                 currentPlaylistSong = expectedSong2,
-                playing = true
+                playing = true,
+                elapsedTimeLabel = "0:00",
+                totalTimeLabel = "1:00"
             ),
             states[4]
         )
@@ -950,6 +994,8 @@ class MusicPlayerViewModelTest {
                 playing = true,
                 currentPlaylistSong = expectedSong,
                 playlist = playlist,
+                elapsedTimeLabel = "0:01",
+                totalTimeLabel = "1:00"
             ),
             states[4]
         )
@@ -964,6 +1010,8 @@ class MusicPlayerViewModelTest {
                 playing = true,
                 currentPlaylistSong = expectedSong,
                 playlist = playlist,
+                elapsedTimeLabel = "0:07",
+                totalTimeLabel = "1:00"
             ),
             states[10]
         )
@@ -973,6 +1021,6 @@ class MusicPlayerViewModelTest {
     }
 
     companion object {
-        private const val TEST_SONG_DURATION = 60 * 1000f
+        private const val TEST_SONG_DURATION = 60 * 1000L
     }
 }
