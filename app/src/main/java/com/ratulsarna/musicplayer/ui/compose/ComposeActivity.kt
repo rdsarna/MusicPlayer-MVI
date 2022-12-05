@@ -226,17 +226,16 @@ fun MusicPlayerScreenContent(
                             1f - bottomSheetProgressFractionProvider() * 2
                         )
                     },
-                currentTimeLabel = state.elapsedTime.getTimeLabel(),
-                totalDurationTimeLabel = state.totalDuration.toInt()
-                    .getTimeLabel(),
-                totalDuration = state.totalDuration,
+                currentTimeLabel = state.elapsedTimeLabel,
+                totalDurationTimeLabel = state.totalTimeLabel,
+                totalDuration = state.totalDuration.toFloat(),
                 onSliderValueChange = {
-                    sendUiEvent(MusicPlayerIntent.SeekToIntent(it.roundToInt()))
+                    sendUiEvent(MusicPlayerIntent.SeekToIntent(it))
                 },
                 sliderValue = min(
-                    state.elapsedTime.toFloat(),
+                    state.elapsedTime,
                     state.totalDuration
-                ),
+                ).toFloat(),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Controls(
@@ -488,12 +487,6 @@ fun DefaultPreview() {
             sendUiEvent = {}
         )
     }
-}
-
-fun Int.getTimeLabel(): String {
-    val minutes = this / (1000 * 60)
-    val seconds = this / 1000 % 60
-    return "$minutes:${if (seconds < 10) "0$seconds" else seconds}"
 }
 
 val BottomSheetScaffoldState.currentFraction: Float

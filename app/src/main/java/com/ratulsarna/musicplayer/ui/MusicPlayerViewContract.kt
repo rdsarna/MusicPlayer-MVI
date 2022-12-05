@@ -13,8 +13,10 @@ data class MusicPlayerViewState(
     val songTitle: String,
     val songInfoLabel: String,
     @DrawableRes val albumArt: Int,
-    val totalDuration: Float,
-    val elapsedTime: Int,
+    val totalDuration: Long,
+    val elapsedTime: Long,
+    val elapsedTimeLabel: String,
+    val totalTimeLabel: String,
     val currentPlaylistSong: PlaylistViewSong?,
     val playlist: ImmutableList<PlaylistViewSong>,
 ) {
@@ -25,8 +27,10 @@ data class MusicPlayerViewState(
             songTitle = "Loading...",
             songInfoLabel = "",
             albumArt = R.drawable.placeholder,
-            totalDuration = 1f,
+            totalDuration = 1,
             elapsedTime = 0,
+            elapsedTimeLabel = "0:00",
+            totalTimeLabel = "0:00",
             currentPlaylistSong = null,
             playlist = persistentListOf(),
         )
@@ -44,15 +48,15 @@ sealed class MusicPlayerIntent {
     object PreviousSongIntent : MusicPlayerIntent()
     object SeekForwardIntent : MusicPlayerIntent()
     object SeekBackwardIntent : MusicPlayerIntent()
-    data class SeekToIntent(val position: Int) : MusicPlayerIntent()
-    data class SongTickerIntent(val position: Int): MusicPlayerIntent()
+    data class SeekToIntent(val position: Float) : MusicPlayerIntent()
+    data class SongTickerIntent(val position: Long): MusicPlayerIntent()
 }
 
 sealed class MusicPlayerPartialStateChange {
     data class UiCreatePartialStateChange(val playlist: List<PlaylistViewSong>) : MusicPlayerPartialStateChange()
     data class UiStartPartialStateChange(
         val song: Song?,
-        val duration: Int,
+        val duration: Long,
         val playing: Boolean?,
         val errorLoadingSong: Boolean,
     ) : MusicPlayerPartialStateChange()
@@ -61,12 +65,12 @@ sealed class MusicPlayerPartialStateChange {
     data class PausePartialStateChange(val playing: Boolean) : MusicPlayerPartialStateChange()
     data class NewSongPartialStateChange(
         val song: Song?,
-        val duration: Int,
+        val duration: Long,
         val playing: Boolean,
         val errorLoading: Boolean,
     ) : MusicPlayerPartialStateChange()
-    data class SeekToPartialStateChange(val position: Int) : MusicPlayerPartialStateChange()
-    data class CurrentPositionPartialStateChange(val position: Int) : MusicPlayerPartialStateChange()
+    data class SeekToPartialStateChange(val position: Long) : MusicPlayerPartialStateChange()
+    data class SongTickerPartialStateChange(val position: Long) : MusicPlayerPartialStateChange()
 }
 
 sealed class MusicPlayerSideEffect {

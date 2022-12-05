@@ -66,7 +66,7 @@ class MusicPlayerViewModel @Inject constructor(
                 oneSecondIntervalJob = interval(1000, TimeUnit.MILLISECONDS).map {
                     mediaPlayerController.getCurrentPosition()
                 }.onEach {
-                    processInput(SongTickerIntent(it))
+                    processInput(SongTickerIntent(it.toLong()))
                 }.launchIn(viewModelScope)
             },
             pausedStoppedListener = {
@@ -116,32 +116,43 @@ class MusicPlayerViewModel @Inject constructor(
                         songTitle = song.title,
                         songInfoLabel = "${song.artistName} | ${song.year}",
                         albumArt = song.albumArtResId,
-                        totalDuration = result.duration.toFloat(),
+                        totalDuration = result.duration,
                         playing = result.playing ?: vs.playing,
                         currentPlaylistSong = song.toPlaylistViewSong(),
+                        elapsedTimeLabel = vs.elapsedTime.getTimeLabel(),
+                        totalTimeLabel = result.duration.getTimeLabel(),
                     )
                 } ?: vs
                 is NewSongPartialStateChange -> {
                     result.song?.let { song ->
+                        val duration = if (result.duration == -1L) vs.totalDuration else result.duration
                         vs.copy(
                             loading = false,
                             songTitle = song.title,
                             songInfoLabel = "${song.artistName} | ${song.year}",
                             albumArt = song.albumArtResId,
                             elapsedTime = 0,
-                            totalDuration = (if (result.duration == -1) vs.totalDuration else result.duration).toFloat(),
+                            totalDuration = (if (result.duration == -1L) vs.totalDuration else result.duration),
                             playing = result.playing,
                             currentPlaylistSong = song.toPlaylistViewSong(),
+                            elapsedTimeLabel = 0L.getTimeLabel(),
+                            totalTimeLabel = duration.getTimeLabel(),
                         )
                     } ?: vs
                 }
                 is SeekToPartialStateChange -> {
-                    vs.copy(elapsedTime = result.position)
+                    vs.copy(
+                        elapsedTime = result.position,
+                        elapsedTimeLabel = result.position.getTimeLabel()
+                    )
                 }
                 UiStopPartialStateChange -> vs
                 is PausePartialStateChange -> vs.copy(playing = result.playing)
                 is PlayPartialStateChange -> vs.copy(playing = result.playing)
-                is CurrentPositionPartialStateChange -> vs.copy(elapsedTime = result.position)
+                is SongTickerPartialStateChange -> vs.copy(
+                    elapsedTime = result.position,
+                    elapsedTimeLabel = result.position.getTimeLabel()
+                )
             }
         }
     }
@@ -181,11 +192,11 @@ class MusicPlayerViewModel @Inject constructor(
             if (loadSuccess) {
                 when {
                     currentViewState.playing && currentViewState.elapsedTime > 0 -> {
-                        playing = mediaPlayerController.seekToAndStart(currentViewState.elapsedTime)
+                        playing = mediaPlayerController.seekToAndStart(currentViewState.elapsedTime.toInt())
                     }
 
                     currentViewState.elapsedTime > 0 -> {
-                        mediaPlayerController.seekTo(currentViewState.elapsedTime)
+                        mediaPlayerController.seekTo(currentViewState.elapsedTime.toInt())
                     }
 
                     currentViewState.playing -> {
@@ -196,7 +207,7 @@ class MusicPlayerViewModel @Inject constructor(
             emit(
                 UiStartPartialStateChange(
                     playlistSongsController.currentSong(),
-                    duration,
+                    duration.toLong(),
                     playing = playing,
                     errorLoadingSong = !loadSuccess,
                 )
@@ -236,26 +247,26 @@ class MusicPlayerViewModel @Inject constructor(
     private fun onSeekForward(flow: Flow<SeekForwardIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
             SeekToPartialStateChange(
-                mediaPlayerController.seekBy(SEEK_DURATION)
+                mediaPlayerController.seekBy(SEEK_DURATION).toLong()
             )
         }
 
     private fun onSeekBackward(flow: Flow<SeekBackwardIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
             SeekToPartialStateChange(
-                mediaPlayerController.seekBy(-SEEK_DURATION)
+                mediaPlayerController.seekBy(-SEEK_DURATION).toLong()
             )
         }
 
     private fun onSeekTo(flow: Flow<SeekToIntent>): Flow<SeekToPartialStateChange> =
         flow.map {
             SeekToPartialStateChange(
-                mediaPlayerController.seekTo(it.position)
+                mediaPlayerController.seekTo(it.position.toInt()).toLong()
             )
         }
 
-    private fun onCurrentPosition(flow: Flow<SongTickerIntent>): Flow<CurrentPositionPartialStateChange> =
-        flow.map { CurrentPositionPartialStateChange(it.position) }
+    private fun onCurrentPosition(flow: Flow<SongTickerIntent>): Flow<SongTickerPartialStateChange> =
+        flow.map { SongTickerPartialStateChange(it.position) }
 
     private fun onNewSong(flow: Flow<NewSongIntent>): Flow<NewSongPartialStateChange> =
         flow.mapNotNull {
@@ -289,12 +300,18 @@ class MusicPlayerViewModel @Inject constructor(
             emit(
                 NewSongPartialStateChange(
                     song = song,
-                    duration = duration,
+                    duration = duration.toLong(),
                     playing = playing,
                     errorLoading = !loadSuccess
                 )
             )
         }
+
+    private fun Long.getTimeLabel(): String {
+        val minutes = this / (1000 * 60)
+        val seconds = this / 1000 % 60
+        return "$minutes:${if (seconds < 10) "0$seconds" else seconds}"
+    }
 
     companion object {
         @VisibleForTesting
