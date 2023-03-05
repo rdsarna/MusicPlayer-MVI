@@ -1,28 +1,22 @@
 package com.ratulsarna.musicplayer
 
-import com.ratulsarna.musicplayer.di.AppComponent
-import com.ratulsarna.musicplayer.di.DaggerAppComponent
-import dagger.android.AndroidInjector
-import dagger.android.DaggerApplication
-import dagger.android.HasAndroidInjector
+import android.app.Application
+import com.ratulsarna.musicplayer.di.appModule
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.startKoin
 import timber.log.Timber
+import kotlin.text.Typography.dagger
 
-class MainApplication : DaggerApplication(), HasAndroidInjector {
-
-    private var appComponent: AppComponent? = null
-
-    override fun applicationInjector(): AndroidInjector<out DaggerApplication> {
-        return getComponent()
-    }
-
-    private fun createComponent() = DaggerAppComponent.factory().create(this) as AppComponent
-
-    private fun getComponent(): AppComponent {
-        return appComponent ?: createComponent().also { appComponent = it }
-    }
-
+class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+
+        startKoin {
+            androidLogger()
+            androidContext(this@MainApplication)
+            modules(appModule)
+        }
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())

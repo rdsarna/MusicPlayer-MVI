@@ -3,9 +3,8 @@ package com.ratulsarna.musicplayer.controllers
 import com.ratulsarna.musicplayer.repository.model.Playlist
 import com.ratulsarna.musicplayer.repository.PlaylistsRepository
 import com.ratulsarna.musicplayer.repository.model.Song
-import javax.inject.Inject
 
-class PlaylistSongsControllerDefault @Inject constructor(
+class PlaylistSongsControllerDefault(
     private val playlistsRepository: PlaylistsRepository
 ) : PlaylistSongsController {
 

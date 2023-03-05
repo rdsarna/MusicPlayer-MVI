@@ -10,9 +10,9 @@ buildscript {
         constraintLayoutVersion = '2.1.4'
         coreVersion = '1.5.0'
         coroutinesVersion = "1.6.4"
-        daggerVersion = '2.45'
         dataBindingVersion = '7.4.2'
         junitVersion = '4.13.2'
+        koinVersion = "3.3.3"
         lifecycleVersion = "2.5.1"
         materialVersion = '1.8.0'
         recyclerViewVersion = '1.2.0'

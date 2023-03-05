@@ -2,7 +2,6 @@ package com.ratulsarna.musicplayer.repository
 
 import com.ratulsarna.musicplayer.R
 import com.ratulsarna.musicplayer.repository.model.Song
-import javax.inject.Inject
 
 interface SongsRepository {
 
@@ -11,7 +10,7 @@ interface SongsRepository {
     fun allSongs(): List<Song>
 }
 
-class SongsRepositoryDefault @Inject constructor() : SongsRepository {
+class SongsRepositoryDefault : SongsRepository {
     private val dummySongsList = listOf(
         Song(
             0,

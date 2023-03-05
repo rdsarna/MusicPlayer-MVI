@@ -26,10 +26,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MusicPlayerViewModel @Inject constructor(
+class MusicPlayerViewModel(
     private val playlistSongsController: PlaylistSongsController,
     private val mediaPlayerController: MediaPlayerController,
     private val coroutineContextProvider: CoroutineContextProvider,

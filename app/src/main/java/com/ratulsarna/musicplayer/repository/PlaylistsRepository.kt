@@ -2,14 +2,13 @@ package com.ratulsarna.musicplayer.repository
 
 import com.ratulsarna.musicplayer.repository.model.Playlist
 import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
-import javax.inject.Inject
 
 interface PlaylistsRepository {
 
     fun getDefaultPlaylist(): Playlist
 }
 
-class PlaylistsRepositoryDefault @Inject constructor(
+class PlaylistsRepositoryDefault(
     songsRepository: SongsRepository,
 ) : PlaylistsRepository {
 

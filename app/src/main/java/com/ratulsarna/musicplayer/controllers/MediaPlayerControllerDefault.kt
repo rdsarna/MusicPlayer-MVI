@@ -5,12 +5,11 @@ import android.media.MediaPlayer
 import com.ratulsarna.musicplayer.repository.model.Song
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
 import timber.log.Timber
-import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class MediaPlayerControllerDefault @Inject constructor(
+class MediaPlayerControllerDefault(
     private val context: Context
 ) : MediaPlayerController {
 
