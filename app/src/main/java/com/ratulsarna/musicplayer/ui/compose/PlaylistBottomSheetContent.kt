@@ -44,7 +44,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun PlaylistBottomSheetContent(
-    statusBarHeight: Dp = 0.dp,
     navigationBarHeight: Dp,
     sheetState: BottomSheetState,
     playlist: ImmutableList<PlaylistViewSong>,

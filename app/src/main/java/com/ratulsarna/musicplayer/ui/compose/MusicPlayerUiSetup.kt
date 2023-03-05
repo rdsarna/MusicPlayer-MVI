@@ -73,7 +73,6 @@ fun ViewEffects(
 
 @Composable
 fun LifecycleEvents(
-    viewModel: MusicPlayerViewModel,
     lifecycleOwner: LifecycleOwner,
     eventChannel: Channel<MusicPlayerIntent>
 ) {

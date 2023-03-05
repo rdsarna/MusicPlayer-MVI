@@ -48,7 +48,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 class ComposeActivity : DaggerAppCompatActivity() {
 
@@ -106,7 +105,6 @@ fun MusicPlayerScreen(
     )
 
     LifecycleEvents(
-        viewModel,
         lifecycleOwner,
         eventChannel
     )
@@ -128,14 +126,8 @@ fun MusicPlayerScreen(
     }
 
     BottomSheetScaffold(
-        scaffoldState = scaffoldState,
-        sheetShape = RoundedCornerShape(
-            topStart = 16.dp,
-            topEnd = 16.dp
-        ),
         sheetContent = {
             PlaylistBottomSheetContent(
-                statusBarHeight = statusBarHeight,
                 navigationBarHeight = navigationBarHeight,
                 sheetState = sheetState,
                 playlist = musicPlayerViewState.playlist,
@@ -144,6 +136,11 @@ fun MusicPlayerScreen(
                 sendUiEvent = { eventChannel.trySend(it) }
             )
         },
+        scaffoldState = scaffoldState,
+        sheetShape = RoundedCornerShape(
+            topStart = 16.dp,
+            topEnd = 16.dp
+        ),
         sheetBackgroundColor = Color.Transparent,
         sheetPeekHeight = 48.dp + navigationBarHeight
     ) {
