@@ -1,5 +1,4 @@
 @file:OptIn(
-    ExperimentalAnimationApi::class,
     ExperimentalMaterial3Api::class,
 )
 
@@ -43,6 +42,7 @@ import com.ratulsarna.musicplayer.ui.ViewEffects
 import com.ratulsarna.musicplayer.ui.setupEventChannel
 import com.ratulsarna.musicplayer.ui.ui.theme.*
 import fr.swarmlab.beta.ui.screens.components.material3.*
+import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffoldState
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.math.max
