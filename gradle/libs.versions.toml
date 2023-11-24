@@ -1,0 +1,70 @@
+[versions]
+agp = "8.1.4"
+gradle = "8.1.4"
+kotlin = "1.9.10"
+compose = "1.5.4"
+compose-compiler = "1.5.3"
+compose-material3 = "1.1.2"
+androidx-activityCompose = "1.8.0"
+appCompat = "1.6.1"
+archTestCore = "2.2.0"
+constraintLayout = "2.1.4"
+coreKtx = "1.12.0"
+coroutines = "1.7.3"
+dataBinding = "8.1.4"
+junit = "4.13.2"
+koin = "3.4.2"
+lifecycle = "2.6.2"
+material = "1.10.0"
+timber = "5.0.1"
+testCore = "1.2.0"
+testRunner = "1.5.2"
+testRules = "1.5.0"
+composeBom = "2023.10.01"
+activityCompose = "1.8.1"
+viewModelCompose = "2.6.2"
+kotlinxCollectionsImmutable = "0.3.5"
+
+[libraries]
+gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
+kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appCompat" }
+google-material = { module = "com.google.android.material:material", version.ref = "material" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintLayout" }
+androidx-databinding = { module = "androidx.databinding:databinding-runtime", version.ref = "dataBinding" }
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+androidx-lifecycle-viewmodelKtx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "lifecycle" }
+androidx-lifecycle-runtimeKtx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "archTestCore" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "testRules" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+ui-util = { module = "androidx.compose.ui:ui-util" }
+ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+ui-test = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
+ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+windowSizeClass = { module = "androidx.compose.material3:material3-window-size-class" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "viewModelCompose" }
+kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
+kotlinKapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
