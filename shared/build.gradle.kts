@@ -4,7 +4,9 @@ plugins {
     alias(libs.plugins.androidLibrary)
 }
 
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
 kotlin {
+    targetHierarchy.default()
     androidTarget {
         compilations.all {
             kotlinOptions {

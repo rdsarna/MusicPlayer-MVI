@@ -41,6 +41,8 @@ import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
 import com.ratulsarna.musicplayer.ui.ViewEffects
 import com.ratulsarna.musicplayer.ui.setupEventChannel
 import com.ratulsarna.musicplayer.ui.ui.theme.*
+import com.ratulsarna.shared.Greeting
+import com.ratulsarna.shared.Platform
 import fr.swarmlab.beta.ui.screens.components.material3.*
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffoldState
 import kotlinx.coroutines.launch
@@ -53,6 +55,7 @@ class ComposeActivity : AppCompatActivity() {
     private val viewModel: MusicPlayerViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(
             window,
