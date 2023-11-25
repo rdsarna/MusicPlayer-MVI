@@ -1,8 +1,8 @@
 package com.ratulsarna.musicplayer.controllers
 
-import com.ratulsarna.musicplayer.repository.model.Playlist
-import com.ratulsarna.musicplayer.repository.PlaylistsRepository
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Playlist
+import com.ratulsarna.shared.repository.PlaylistsRepository
+import com.ratulsarna.shared.repository.model.Song
 
 class PlaylistSongsControllerDefault(
     private val playlistsRepository: PlaylistsRepository

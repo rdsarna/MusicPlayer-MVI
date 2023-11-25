@@ -1,9 +1,9 @@
 package com.ratulsarna.musicplayer
 
-import com.ratulsarna.musicplayer.repository.model.Playlist
-import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
-import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryMock
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Playlist
+import com.ratulsarna.shared.repository.model.PlaylistSongWrapper
+import com.ratulsarna.shared.repository.PlaylistsRepositoryMock
+import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
 import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
 import org.junit.Test

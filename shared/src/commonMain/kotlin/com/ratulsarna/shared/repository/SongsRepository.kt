@@ -1,7 +1,8 @@
-package com.ratulsarna.musicplayer.repository
+package com.ratulsarna.shared.repository
 
-import com.ratulsarna.musicplayer.R
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Song
+import com.ratulsarna.shared.BundledSongFileName
+import com.ratulsarna.shared.resources.ImageResource
 
 interface SongsRepository {
 
@@ -17,32 +18,32 @@ class SongsRepositoryDefault : SongsRepository {
             "Levitating",
             "Dua Lipa feat. DaBaby",
             2020,
-            R.drawable.levitating_album_art,
-            R.raw.dua_lipa_levitating,
+            ImageResource.LEVITATING_ALBUM_ART,
+            BundledSongFileName.LEVITATING
         ),
         Song(
             1,
             "Drinkee",
             "Sofi Tukker",
             2016,
-            R.drawable.drinkee_album_art,
-            R.raw.sofi_tukker_drinkee,
+            ImageResource.DRINKEE_ALBUM_ART,
+            BundledSongFileName.DRINKEE
         ),
         Song(
             2,
             "Fireflies",
             "Owl City",
             2009,
-            R.drawable.fireflies_album_art,
-            R.raw.owl_city_fireflies,
+            ImageResource.FIREFLIES_ALBUM_ART,
+            BundledSongFileName.FIREFLIES
         ),
         Song(
             3,
             "Despacito",
             "Luis Fonsi ft. Daddy Yankee",
             2017,
-            R.drawable.despacito_album_art,
-            R.raw.luis_fonsi_despacito,
+            ImageResource.DESPACITO_ALBUM_ART,
+            BundledSongFileName.DESPACITO
         )
     )
     private val allSongs = mutableListOf<Song>().apply {

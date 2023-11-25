@@ -43,6 +43,7 @@ import com.ratulsarna.musicplayer.ui.setupEventChannel
 import com.ratulsarna.musicplayer.ui.ui.theme.*
 import com.ratulsarna.shared.Greeting
 import com.ratulsarna.shared.Platform
+import com.ratulsarna.shared.resources.ImageResource
 import fr.swarmlab.beta.ui.screens.components.material3.*
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffoldState
 import kotlinx.coroutines.launch
@@ -195,7 +196,7 @@ fun MusicPlayerScreenContent(
                         bottom = 8.dp,
                         top = 8.dp + statusBarHeight
                     ),
-                albumRes = state.albumArt,
+                albumRes = getResourceId(state.albumArt),
                 bottomSheetProgressFractionProvider = bottomSheetProgressFractionProvider,
             )
             Spacer(modifier = Modifier.height(32.dp))
@@ -495,3 +496,13 @@ val BottomSheetScaffoldState.currentFraction: Float
             else -> 1f - fraction
         }
     }
+
+internal fun getResourceId(albumArt: ImageResource): Int {
+    return when (albumArt) {
+        ImageResource.PLACEHOLDER_ALBUM_ART -> R.drawable.placeholder
+        ImageResource.LEVITATING_ALBUM_ART -> R.drawable.levitating_album_art
+        ImageResource.DRINKEE_ALBUM_ART -> R.drawable.drinkee_album_art
+        ImageResource.FIREFLIES_ALBUM_ART -> R.drawable.fireflies_album_art
+        ImageResource.DESPACITO_ALBUM_ART -> R.drawable.despacito_album_art
+    }
+}

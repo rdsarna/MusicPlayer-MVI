@@ -1,7 +1,7 @@
-package com.ratulsarna.musicplayer.repository
+package com.ratulsarna.shared.repository
 
-import com.ratulsarna.musicplayer.repository.model.Playlist
-import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
+import com.ratulsarna.shared.repository.model.Playlist
+import com.ratulsarna.shared.repository.model.PlaylistSongWrapper
 
 interface PlaylistsRepository {
 
@@ -15,9 +15,7 @@ class PlaylistsRepositoryDefault(
     private val _defaultPlaylist = Playlist(
         songs = songsRepository.allSongs().mapIndexed { i, song ->
             PlaylistSongWrapper(i, song)
-        },
-        createdAt = System.currentTimeMillis(),
-        updatedAt = System.currentTimeMillis(),
+        }
     )
 
     override fun getDefaultPlaylist(): Playlist = _defaultPlaylist

@@ -1,7 +1,8 @@
 package com.ratulsarna.musicplayer.controllers
 
 import android.media.MediaPlayer
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Song
+import com.ratulsarna.shared.BundledSongFileName
 
 interface MediaPlayerController {
 
@@ -13,7 +14,7 @@ interface MediaPlayerController {
     /**
      * Synchronously loads song into [MediaPlayer] and returns true if successful loading else false
      */
-    fun loadNewSong(song: Song?): Boolean
+    fun loadNewSong(songFileName: BundledSongFileName?): Boolean
 
     fun start(): Boolean
     fun stop(): Boolean

@@ -4,10 +4,10 @@ import com.ratulsarna.musicplayer.controllers.MediaPlayerCommand
 import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
 import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock.Companion.TEST_SONG_DURATION
 import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
-import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryMock
-import com.ratulsarna.musicplayer.repository.model.Playlist
-import com.ratulsarna.musicplayer.repository.model.PlaylistSongWrapper
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.PlaylistsRepositoryMock
+import com.ratulsarna.shared.repository.model.Playlist
+import com.ratulsarna.shared.repository.model.PlaylistSongWrapper
+import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
@@ -42,7 +42,8 @@ class MusicPlayerViewModelTest {
             2020,
             R.drawable.levitating_album_art,
             R.raw.dua_lipa_levitating,
-        )),
+        )
+        ),
         PlaylistSongWrapper(1, Song(
             1,
             "Drinkee",
@@ -50,7 +51,8 @@ class MusicPlayerViewModelTest {
             2016,
             R.drawable.drinkee_album_art,
             R.raw.sofi_tukker_drinkee,
-        )),
+        )
+        ),
         PlaylistSongWrapper(2, Song(
             2,
             "Fireflies",
@@ -58,7 +60,8 @@ class MusicPlayerViewModelTest {
             2009,
             R.drawable.fireflies_album_art,
             R.raw.owl_city_fireflies,
-        )),
+        )
+        ),
     )
 
     private val testDispatcher = ImmediateTestDispatcher()

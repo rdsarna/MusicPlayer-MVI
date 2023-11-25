@@ -1,4 +1,4 @@
-package com.ratulsarna.musicplayer.repository.model
+package com.ratulsarna.shared.repository.model
 
 data class PlaylistSongWrapper(
     val order: Int,

@@ -2,8 +2,10 @@ package com.ratulsarna.musicplayer.controllers
 
 import android.content.Context
 import android.media.MediaPlayer
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.musicplayer.R
+import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
+import com.ratulsarna.shared.BundledSongFileName
 import timber.log.Timber
 import kotlin.math.max
 import kotlin.math.min
@@ -28,8 +30,8 @@ class MediaPlayerControllerDefault(
         this.songCompletedListener = songCompletedListener
     }
 
-    override fun loadNewSong(song: Song?): Boolean {
-        if (song == null) return false
+    override fun loadNewSong(bundledSongFileName: BundledSongFileName?): Boolean {
+        if (bundledSongFileName == null) return false
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer().apply {
                 setOnCompletionListener {
@@ -43,7 +45,7 @@ class MediaPlayerControllerDefault(
         }
         pausedStoppedListener?.invoke()
         return try {
-            val assetFileDescriptor = context.resources.openRawResourceFd(song.rawResourceId)
+            val assetFileDescriptor = context.resources.openRawResourceFd(getRawResourceId(bundledSongFileName))
                 ?: throw RuntimeException("ErrorLoadingSong")
             mediaPlayer?.run {
                 reset()
@@ -55,8 +57,17 @@ class MediaPlayerControllerDefault(
             }
             true
         } catch (ex: Exception) {
-            Timber.e(ex,  "Exception while loading song, %s", song)
+            Timber.e(ex,  "Exception while loading song, %s", bundledSongFileName)
             false
+        }
+    }
+
+    private fun getRawResourceId(bundledSongFileName: BundledSongFileName): Int {
+        return when (bundledSongFileName) {
+            BundledSongFileName.LEVITATING -> R.raw.dua_lipa_levitating
+            BundledSongFileName.DRINKEE -> R.raw.sofi_tukker_drinkee
+            BundledSongFileName.FIREFLIES -> R.raw.owl_city_fireflies
+            BundledSongFileName.DESPACITO -> R.raw.luis_fonsi_despacito
         }
     }
 

@@ -166,7 +166,7 @@ private fun PlaylistSongItem(
                 .height(48.dp)
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(6.dp)),
-            painter = painterResource(id = playlistSong.albumArt),
+            painter = painterResource(id = getResourceId(playlistSong.albumArtResource)),
             contentDescription = ""
         )
         Spacer(modifier = Modifier.width(16.dp))

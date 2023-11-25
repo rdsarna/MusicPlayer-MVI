@@ -1,6 +1,6 @@
 package com.ratulsarna.musicplayer.controllers
 
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Song
 
 interface PlaylistSongsController {
     fun loadDefaultPlaylistSongs(): List<Song>

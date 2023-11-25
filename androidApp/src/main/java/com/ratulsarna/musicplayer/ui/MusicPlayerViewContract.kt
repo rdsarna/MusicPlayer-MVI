@@ -2,8 +2,9 @@ package com.ratulsarna.musicplayer.ui
 
 import androidx.annotation.DrawableRes
 import com.ratulsarna.musicplayer.R
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
+import com.ratulsarna.shared.resources.ImageResource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -12,7 +13,7 @@ data class MusicPlayerViewState(
     val playing: Boolean,
     val songTitle: String,
     val songInfoLabel: String,
-    @DrawableRes val albumArt: Int,
+    val albumArt: ImageResource,
     val totalDuration: Long,
     val elapsedTime: Long,
     val elapsedTimeLabel: String,
@@ -26,7 +27,7 @@ data class MusicPlayerViewState(
             playing = false,
             songTitle = "Loading...",
             songInfoLabel = "",
-            albumArt = R.drawable.placeholder,
+            albumArt = ImageResource.PLACEHOLDER_ALBUM_ART,
             totalDuration = 1,
             elapsedTime = 0,
             elapsedTimeLabel = "0:00",

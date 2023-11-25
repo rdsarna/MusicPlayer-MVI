@@ -3,7 +3,7 @@ package com.ratulsarna.musicplayer.ui.vm
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange.*
@@ -114,7 +114,7 @@ class MusicPlayerViewModel(
                         loading = false,
                         songTitle = song.title,
                         songInfoLabel = "${song.artistName} | ${song.year}",
-                        albumArt = song.albumArtResId,
+                        albumArt = song.albumArtResource,
                         totalDuration = result.duration,
                         playing = result.playing ?: vs.playing,
                         currentPlaylistSong = song.toPlaylistViewSong(),
@@ -129,7 +129,7 @@ class MusicPlayerViewModel(
                             loading = false,
                             songTitle = song.title,
                             songInfoLabel = "${song.artistName} | ${song.year}",
-                            albumArt = song.albumArtResId,
+                            albumArt = song.albumArtResource,
                             elapsedTime = 0,
                             totalDuration = (if (result.duration == -1L) vs.totalDuration else result.duration),
                             playing = result.playing,
@@ -182,7 +182,7 @@ class MusicPlayerViewModel(
         flow.transformLatest {
             // emit a loading state if new song load takes time
             val loadSuccess = withContext(coroutineContextProvider.io) {
-                mediaPlayerController.loadNewSong(playlistSongsController.currentSong())
+                mediaPlayerController.loadNewSong(playlistSongsController.currentSong()?.songFileName)
             }
             val duration =
                 if (loadSuccess) mediaPlayerController.getDuration() else MINIMUM_DURATION
@@ -287,7 +287,7 @@ class MusicPlayerViewModel(
                 )
             )
             val loadSuccess = withContext(coroutineContextProvider.io) {
-                val loadSuccess = mediaPlayerController.loadNewSong(song)
+                val loadSuccess = mediaPlayerController.loadNewSong(song?.songFileName)
                 if (!loadSuccess) mediaPlayerController.release()
                 return@withContext loadSuccess
             }

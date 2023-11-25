@@ -1,7 +1,8 @@
 package com.ratulsarna.musicplayer.controllers
 
 import androidx.annotation.VisibleForTesting
-import com.ratulsarna.musicplayer.repository.model.Song
+import com.ratulsarna.shared.repository.model.Song
+import com.ratulsarna.shared.BundledSongFileName
 import kotlin.math.max
 import kotlin.math.min
 
@@ -19,7 +20,7 @@ class MediaPlayerControllerMock : MediaPlayerController {
         commands.add(MediaPlayerCommand.Init)
     }
 
-    override fun loadNewSong(song: Song?): Boolean {
+    override fun loadNewSong(bundledSongFileName: BundledSongFileName?): Boolean {
         commands.add(MediaPlayerCommand.LoadSong)
         return !_loadNewSongResultsInError
     }

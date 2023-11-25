@@ -4,10 +4,10 @@ import com.ratulsarna.musicplayer.controllers.MediaPlayerController
 import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerDefault
 import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
 import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
-import com.ratulsarna.musicplayer.repository.PlaylistsRepository
-import com.ratulsarna.musicplayer.repository.PlaylistsRepositoryDefault
-import com.ratulsarna.musicplayer.repository.SongsRepository
-import com.ratulsarna.musicplayer.repository.SongsRepositoryDefault
+import com.ratulsarna.shared.repository.PlaylistsRepository
+import com.ratulsarna.shared.repository.PlaylistsRepositoryDefault
+import com.ratulsarna.shared.repository.SongsRepository
+import com.ratulsarna.shared.repository.SongsRepositoryDefault
 import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
 import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.CoroutineContextProviderDefault
