@@ -7,14 +7,14 @@ import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
 import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange.*
-import com.ratulsarna.musicplayer.controllers.MediaPlayerController
-import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
+import com.ratulsarna.shared.controllers.MediaPlayerController
+import com.ratulsarna.shared.controllers.PlaylistSongsController
 import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
 import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
 import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
-import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
+import com.ratulsarna.shared.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
 import com.ratulsarna.musicplayer.utils.interval
 import kotlinx.collections.immutable.toImmutableList

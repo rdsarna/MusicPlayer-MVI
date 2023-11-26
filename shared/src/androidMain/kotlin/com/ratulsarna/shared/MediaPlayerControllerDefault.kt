@@ -1,17 +1,13 @@
-package com.ratulsarna.musicplayer.controllers
+package com.ratulsarna.shared
 
 import android.content.Context
 import android.media.MediaPlayer
-import com.ratulsarna.musicplayer.R
-import com.ratulsarna.shared.repository.model.Song
-import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
-import com.ratulsarna.shared.BundledSongFileName
-import timber.log.Timber
+import com.ratulsarna.shared.controllers.MediaPlayerController
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class MediaPlayerControllerDefault(
+class MediaPlayerControllerAndroid(
     private val context: Context
 ) : MediaPlayerController {
 
@@ -30,8 +26,8 @@ class MediaPlayerControllerDefault(
         this.songCompletedListener = songCompletedListener
     }
 
-    override fun loadNewSong(bundledSongFileName: BundledSongFileName?): Boolean {
-        if (bundledSongFileName == null) return false
+    override fun loadNewSong(songFileName: BundledSongFileName?): Boolean {
+        if (songFileName == null) return false
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer().apply {
                 setOnCompletionListener {
@@ -45,7 +41,7 @@ class MediaPlayerControllerDefault(
         }
         pausedStoppedListener?.invoke()
         return try {
-            val assetFileDescriptor = context.resources.openRawResourceFd(getRawResourceId(bundledSongFileName))
+            val assetFileDescriptor = context.resources.openRawResourceFd(getRawResourceId(songFileName))
                 ?: throw RuntimeException("ErrorLoadingSong")
             mediaPlayer?.run {
                 reset()
@@ -57,13 +53,13 @@ class MediaPlayerControllerDefault(
             }
             true
         } catch (ex: Exception) {
-            Timber.e(ex,  "Exception while loading song, %s", bundledSongFileName)
+            //Timber.e(ex,  "Exception while loading song, %s", bundledSongFileName)
             false
         }
     }
 
-    private fun getRawResourceId(bundledSongFileName: BundledSongFileName): Int {
-        return when (bundledSongFileName) {
+    private fun getRawResourceId(songFileName: BundledSongFileName): Int {
+        return when (songFileName) {
             BundledSongFileName.LEVITATING -> R.raw.dua_lipa_levitating
             BundledSongFileName.DRINKEE -> R.raw.sofi_tukker_drinkee
             BundledSongFileName.FIREFLIES -> R.raw.owl_city_fireflies
@@ -98,7 +94,7 @@ class MediaPlayerControllerDefault(
         }
     }
 
-    override fun getDuration(): Int = mediaPlayer?.duration ?: MINIMUM_DURATION
+    override fun getDuration(): Int = mediaPlayer?.duration ?: 1 //MINIMUM_DURATION
 
     override fun seekTo(position: Int): Int {
         if (mediaPlayer == null) return 0
@@ -142,7 +138,7 @@ class MediaPlayerControllerDefault(
         try {
             block()
         } catch (ex: java.lang.IllegalStateException) {
-            Timber.e(ex, errorLog)
+            // Timber.e(ex, errorLog)
             errorReturn
         }
 

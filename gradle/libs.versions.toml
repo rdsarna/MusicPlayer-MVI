@@ -24,9 +24,13 @@ composeBom = "2023.10.01"
 activityCompose = "1.8.1"
 viewModelCompose = "2.6.2"
 kotlinxCollectionsImmutable = "0.3.5"
+kmm-viewmodel = "1.0.0-ALPHA-15"
+google-devtool-ksp = "1.9.20-1.0.14"
+kmp-nativecoroutines = "1.0.0-ALPHA-21"
 
 [libraries]
 gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
+kmm-viewmodel-core = { module = "com.rickclephas.kmm:kmm-viewmodel-core", version.ref = "kmm-viewmodel" }
 kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appCompat" }
@@ -69,3 +73,5 @@ kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
 kotlinKapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+googleDevtoolsKsp = { id = "com.google.devtools.ksp", version.ref = "google-devtool-ksp" }
+kmpNativeCoroutines = { id = "com.rickclephas.kmp.nativecoroutines", version.ref = "kmp-nativecoroutines" }

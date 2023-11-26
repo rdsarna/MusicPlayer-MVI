@@ -1,7 +1,5 @@
-package com.ratulsarna.musicplayer.controllers
+package com.ratulsarna.shared.controllers
 
-import android.media.MediaPlayer
-import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.shared.BundledSongFileName
 
 interface MediaPlayerController {

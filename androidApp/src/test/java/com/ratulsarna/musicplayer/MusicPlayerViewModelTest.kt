@@ -1,9 +1,8 @@
 package com.ratulsarna.musicplayer
 
-import com.ratulsarna.musicplayer.controllers.MediaPlayerCommand
-import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock
-import com.ratulsarna.musicplayer.controllers.MediaPlayerControllerMock.Companion.TEST_SONG_DURATION
-import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
+import com.ratulsarna.shared.controllers.MediaPlayerCommand
+import com.ratulsarna.shared.controllers.MediaPlayerControllerMock
+import com.ratulsarna.shared.controllers.PlaylistSongsControllerDefault
 import com.ratulsarna.shared.repository.PlaylistsRepositoryMock
 import com.ratulsarna.shared.repository.model.Playlist
 import com.ratulsarna.shared.repository.model.PlaylistSongWrapper
@@ -13,7 +12,7 @@ import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
 import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
 import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
 import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
-import com.ratulsarna.musicplayer.utils.CoroutineContextProvider
+import com.ratulsarna.shared.CoroutineContextProvider
 import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +27,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import kotlin.coroutines.CoroutineContext
-import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)

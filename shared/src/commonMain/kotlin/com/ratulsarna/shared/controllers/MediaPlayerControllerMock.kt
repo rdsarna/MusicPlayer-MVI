@@ -1,16 +1,15 @@
-package com.ratulsarna.musicplayer.controllers
+package com.ratulsarna.shared.controllers
 
-import androidx.annotation.VisibleForTesting
-import com.ratulsarna.shared.repository.model.Song
+
 import com.ratulsarna.shared.BundledSongFileName
 import kotlin.math.max
 import kotlin.math.min
 
 class MediaPlayerControllerMock : MediaPlayerController {
 
-    @VisibleForTesting var commands = mutableListOf<MediaPlayerCommand>()
-    @VisibleForTesting var _currentPosition = 0
-    @VisibleForTesting var _loadNewSongResultsInError = false
+    var commands = mutableListOf<MediaPlayerCommand>()
+    var _currentPosition = 0
+    var _loadNewSongResultsInError = false
 
     override fun init(
         startedListener: () -> Unit,

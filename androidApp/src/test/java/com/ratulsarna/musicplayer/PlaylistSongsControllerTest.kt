@@ -4,8 +4,8 @@ import com.ratulsarna.shared.repository.model.Playlist
 import com.ratulsarna.shared.repository.model.PlaylistSongWrapper
 import com.ratulsarna.shared.repository.PlaylistsRepositoryMock
 import com.ratulsarna.shared.repository.model.Song
-import com.ratulsarna.musicplayer.controllers.PlaylistSongsController
-import com.ratulsarna.musicplayer.controllers.PlaylistSongsControllerDefault
+import com.ratulsarna.shared.controllers.PlaylistSongsController
+import com.ratulsarna.shared.controllers.PlaylistSongsControllerDefault
 import org.junit.Test
 
 import org.junit.Assert.*

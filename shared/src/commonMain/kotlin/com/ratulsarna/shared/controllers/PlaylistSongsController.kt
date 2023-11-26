@@ -1,4 +1,4 @@
-package com.ratulsarna.musicplayer.controllers
+package com.ratulsarna.shared.controllers
 
 import com.ratulsarna.shared.repository.model.Song
 
