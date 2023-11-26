@@ -13,7 +13,7 @@ coreKtx = "1.12.0"
 coroutines = "1.7.3"
 dataBinding = "8.1.4"
 junit = "4.13.2"
-koin = "3.4.2"
+koin = "3.5.0"
 lifecycle = "2.6.2"
 material = "1.10.0"
 timber = "5.0.1"
@@ -38,6 +38,7 @@ androidx-lifecycle-viewmodelKtx = { module = "androidx.lifecycle:lifecycle-viewm
 androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "lifecycle" }
 androidx-lifecycle-runtimeKtx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "archTestCore" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }

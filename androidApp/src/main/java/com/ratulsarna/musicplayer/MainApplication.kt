@@ -1,12 +1,12 @@
 package com.ratulsarna.musicplayer
 
 import android.app.Application
-import com.ratulsarna.musicplayer.di.appModule
+import com.ratulsarna.musicplayer.di.androidAppModule
+import com.ratulsarna.shared.di.commonModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import timber.log.Timber
-import kotlin.text.Typography.dagger
 
 class MainApplication : Application() {
     override fun onCreate() {
@@ -15,7 +15,7 @@ class MainApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@MainApplication)
-            modules(appModule)
+            modules(commonModule() + androidAppModule)
         }
 
         if (BuildConfig.DEBUG) {

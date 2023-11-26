@@ -31,10 +31,13 @@ kotlin {
 
     sourceSets {
         sourceSets["commonMain"].dependencies {
-
+            api(libs.koin.core)
         }
         sourceSets["commonTest"].dependencies {
             implementation(kotlin("test"))
+        }
+        sourceSets["androidMain"].dependencies {
+            implementation(libs.koin.android)
         }
     }
 }
