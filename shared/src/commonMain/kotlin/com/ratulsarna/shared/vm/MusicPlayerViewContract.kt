@@ -1,10 +1,8 @@
-package com.ratulsarna.musicplayer.ui
+package com.ratulsarna.shared.vm
 
-import androidx.annotation.DrawableRes
-import com.ratulsarna.musicplayer.R
 import com.ratulsarna.shared.repository.model.Song
-import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
 import com.ratulsarna.shared.resources.ImageResource
+import com.ratulsarna.shared.vm.model.PlaylistViewSong
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 

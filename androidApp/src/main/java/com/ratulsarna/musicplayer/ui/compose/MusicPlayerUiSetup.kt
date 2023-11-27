@@ -10,7 +10,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.flowWithLifecycle
-import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
+import com.ratulsarna.shared.vm.MusicPlayerIntent
+import com.ratulsarna.shared.vm.MusicPlayerSideEffect
+import com.ratulsarna.shared.vm.MusicPlayerViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach

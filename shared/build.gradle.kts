@@ -2,8 +2,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.googleDevtoolsKsp)
-    alias(libs.plugins.kmpNativeCoroutines)
+    alias(libs.plugins.skie)
 }
 
 kotlin {
@@ -34,11 +33,12 @@ kotlin {
     sourceSets {
         all {
             languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
-            languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
         }
         sourceSets["commonMain"].dependencies {
             api(libs.koin.core)
             api(libs.kmm.viewmodel.core)
+            implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.skie.config.annotations)
         }
         sourceSets["commonTest"].dependencies {
             implementation(kotlin("test"))

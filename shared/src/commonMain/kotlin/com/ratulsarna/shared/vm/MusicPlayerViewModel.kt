@@ -1,22 +1,17 @@
-package com.ratulsarna.musicplayer.ui.vm
+package com.ratulsarna.shared.vm
 
-import androidx.annotation.VisibleForTesting
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.ratulsarna.shared.repository.model.Song
-import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect.*
-import com.ratulsarna.musicplayer.ui.MusicPlayerIntent.*
-import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange.*
+import com.ratulsarna.shared.CoroutineContextProvider
+import com.ratulsarna.shared.MINIMUM_DURATION
 import com.ratulsarna.shared.controllers.MediaPlayerController
 import com.ratulsarna.shared.controllers.PlaylistSongsController
-import com.ratulsarna.musicplayer.ui.MusicPlayerSideEffect
-import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
-import com.ratulsarna.musicplayer.ui.MusicPlayerPartialStateChange
-import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
-import com.ratulsarna.musicplayer.ui.model.toPlaylistViewSong
-import com.ratulsarna.shared.CoroutineContextProvider
-import com.ratulsarna.musicplayer.utils.MINIMUM_DURATION
-import com.ratulsarna.musicplayer.utils.interval
+import com.ratulsarna.shared.interval
+import com.ratulsarna.shared.repository.model.Song
+import com.ratulsarna.shared.vm.MusicPlayerIntent.*
+import com.ratulsarna.shared.vm.MusicPlayerPartialStateChange.*
+import com.ratulsarna.shared.vm.MusicPlayerSideEffect.*
+import com.ratulsarna.shared.vm.model.toPlaylistViewSong
+import com.rickclephas.kmm.viewmodel.KMMViewModel
+import com.rickclephas.kmm.viewmodel.coroutineScope
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -24,15 +19,15 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
-import java.util.concurrent.TimeUnit
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MusicPlayerViewModel(
-    private val playlistSongsController: PlaylistSongsController,
-    private val mediaPlayerController: MediaPlayerController,
-    private val coroutineContextProvider: CoroutineContextProvider,
-) : ViewModel() {
+class MusicPlayerViewModel() : KMMViewModel(), KoinComponent {
+
+    private val playlistSongsController: PlaylistSongsController by inject()
+    private val mediaPlayerController: MediaPlayerController by inject()
+    private val coroutineContextProvider: CoroutineContextProvider by inject()
 
     private var oneSecondIntervalJob: Job? = null
     private val _intentFlow = MutableSharedFlow<MusicPlayerIntent>()
@@ -44,35 +39,35 @@ class MusicPlayerViewModel(
     init {
         val initialVS = MusicPlayerViewState.INITIAL
         viewState = _intentFlow
-            .onEach { Timber.d("Event = $it") }
+            //.onEach { Timber.d("Event = $it") }
             .intentToPartialStateChange()
-            .onEach { Timber.d("Result = $it") }
+            //.onEach { Timber.d("Result = $it") }
             .partialStateChangeToSideEffect()
             .partialChangeToViewState()
-            .onEach { Timber.d("ViewState = $it") }
+            //.onEach { Timber.d("ViewState = $it") }
             .catch {
                 it.printStackTrace()
-                Timber.e(it, "Something has gone horribly wrong")
+              //  Timber.e(it, "Something has gone horribly wrong")
             }
             .stateIn(
-                viewModelScope,
+                viewModelScope.coroutineScope,
                 SharingStarted.Eagerly,
                 initialVS
             )
 
         mediaPlayerController.init(
             startedListener = {
-                oneSecondIntervalJob = interval(1000, TimeUnit.MILLISECONDS).map {
+                oneSecondIntervalJob = interval(1000).map {
                     mediaPlayerController.getCurrentPosition()
                 }.onEach {
                     processInput(SongTickerIntent(it.toLong()))
-                }.launchIn(viewModelScope)
+                }.launchIn(viewModelScope.coroutineScope)
             },
             pausedStoppedListener = {
                 oneSecondIntervalJob?.cancel()
             },
             songCompletedListener = {
-                viewModelScope.launch {
+                viewModelScope.coroutineScope.launch {
                     processInput(NextSongIntent)
                 }
             }
@@ -165,7 +160,7 @@ class MusicPlayerViewModel(
                 }
                 else -> null
             }
-            Timber.d("SideEffect = $effect")
+//            Timber.d("SideEffect = $effect")
             effect?.let { sideEffectChannel.send(it) }
         }
     }
@@ -313,7 +308,6 @@ class MusicPlayerViewModel(
     }
 
     companion object {
-        @VisibleForTesting
         const val SEEK_DURATION = 5000 // ms
     }
 }

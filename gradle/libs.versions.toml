@@ -23,10 +23,9 @@ testRules = "1.5.0"
 composeBom = "2023.10.01"
 activityCompose = "1.8.1"
 viewModelCompose = "2.6.2"
-kotlinxCollectionsImmutable = "0.3.5"
+kotlinxCollectionsImmutable = "0.3.6"
 kmm-viewmodel = "1.0.0-ALPHA-15"
-google-devtool-ksp = "1.9.20-1.0.14"
-kmp-nativecoroutines = "1.0.0-ALPHA-21"
+skie = "0.5.5"
 
 [libraries]
 gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
@@ -65,6 +64,7 @@ windowSizeClass = { module = "androidx.compose.material3:material3-window-size-c
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "viewModelCompose" }
 kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
+skie-config-annotations = { module = "co.touchlab.skie:configuration-annotations", version.ref = "skie" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -73,5 +73,4 @@ kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
 kotlinKapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
-googleDevtoolsKsp = { id = "com.google.devtools.ksp", version.ref = "google-devtool-ksp" }
-kmpNativeCoroutines = { id = "com.rickclephas.kmp.nativecoroutines", version.ref = "kmp-nativecoroutines" }
+skie = { id = "co.touchlab.skie", version.ref = "skie" }

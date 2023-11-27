@@ -3,7 +3,6 @@ package com.ratulsarna.shared.repository
 import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.shared.BundledSongFileName
 import com.ratulsarna.shared.resources.ImageResource
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
@@ -15,9 +14,6 @@ interface SongsRepository {
 }
 
 class SongsRepositoryDefault : SongsRepository {
-    @NativeCoroutineScope
-    val coroutineScope = CoroutineScope(Dispatchers.Main)
-
     private val dummySongsList = listOf(
         Song(
             0,

@@ -1,6 +1,6 @@
 package com.ratulsarna.musicplayer.ui.compose
 
-import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
+import com.ratulsarna.shared.vm.MusicPlayerIntent
 
 class ControlEventsProvider(sendUiEvent: (MusicPlayerIntent) -> Unit) {
     val onPlay = { sendUiEvent(MusicPlayerIntent.PlayIntent) }

@@ -1,4 +1,4 @@
-package com.ratulsarna.musicplayer.ui.model
+package com.ratulsarna.shared.vm.model
 
 import com.ratulsarna.shared.repository.model.Song
 import com.ratulsarna.shared.resources.ImageResource

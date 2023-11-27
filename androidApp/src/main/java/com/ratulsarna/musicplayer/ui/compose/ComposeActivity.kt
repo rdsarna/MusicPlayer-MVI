@@ -35,14 +35,12 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.*
 import com.ratulsarna.musicplayer.R
 import com.ratulsarna.musicplayer.ui.LifecycleEvents
-import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
-import com.ratulsarna.musicplayer.ui.vm.MusicPlayerViewModel
-import com.ratulsarna.musicplayer.ui.MusicPlayerViewState
+import com.ratulsarna.shared.vm.MusicPlayerIntent
+import com.ratulsarna.shared.vm.MusicPlayerViewModel
+import com.ratulsarna.shared.vm.MusicPlayerViewState
 import com.ratulsarna.musicplayer.ui.ViewEffects
 import com.ratulsarna.musicplayer.ui.setupEventChannel
 import com.ratulsarna.musicplayer.ui.ui.theme.*
-import com.ratulsarna.shared.Greeting
-import com.ratulsarna.shared.Platform
 import com.ratulsarna.shared.resources.ImageResource
 import fr.swarmlab.beta.ui.screens.components.material3.*
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetScaffoldState

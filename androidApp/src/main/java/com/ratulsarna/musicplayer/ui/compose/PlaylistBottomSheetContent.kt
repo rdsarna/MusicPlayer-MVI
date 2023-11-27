@@ -34,8 +34,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ratulsarna.musicplayer.ui.MusicPlayerIntent
-import com.ratulsarna.musicplayer.ui.model.PlaylistViewSong
+import com.ratulsarna.shared.vm.MusicPlayerIntent
+import com.ratulsarna.shared.vm.model.PlaylistViewSong
 import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayDarkerTransparent
 import com.ratulsarna.musicplayer.ui.ui.theme.LightGrayTransparent
 import fr.swarmlab.beta.ui.screens.components.material3.BottomSheetState
