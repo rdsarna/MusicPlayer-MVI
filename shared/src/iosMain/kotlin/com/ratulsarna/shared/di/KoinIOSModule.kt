@@ -5,5 +5,5 @@ import com.ratulsarna.shared.controllers.MediaPlayerController
 import org.koin.dsl.module
 
 actual fun platformModule() = module {
-    factory<MediaPlayerController> { MediaPlayerControllerIOS(get()) }
+    factory<MediaPlayerController> { MediaPlayerControllerIOS() }
 }

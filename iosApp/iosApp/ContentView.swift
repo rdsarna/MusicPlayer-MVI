@@ -7,14 +7,18 @@
 
 import SwiftUI
 import shared
+import KMMViewModelSwiftUI
 
 struct ContentView: View {
+    
+    @StateViewModel var viewModel = MusicPlayerViewModel()
+    
     var body: some View {
         VStack {
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
-            Text(Greeting().greet())
+            Text(viewModel.viewState.value.songTitle)
         }
         .padding()
     }

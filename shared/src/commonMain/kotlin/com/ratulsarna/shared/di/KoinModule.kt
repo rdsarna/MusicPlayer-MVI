@@ -8,7 +8,9 @@ import com.ratulsarna.shared.repository.PlaylistsRepository
 import com.ratulsarna.shared.repository.PlaylistsRepositoryDefault
 import com.ratulsarna.shared.repository.SongsRepository
 import com.ratulsarna.shared.repository.SongsRepositoryDefault
+import org.koin.core.context.startKoin
 import org.koin.core.module.Module
+import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
 fun commonModule() = module {
@@ -18,6 +20,10 @@ fun commonModule() = module {
     single<CoroutineContextProvider> { CoroutineContextProviderDefault() }
 }
 
-expect fun platformModule(): Module
-
 fun sharedModules() = commonModule() + platformModule()
+
+fun initKoin() {
+    startKoin {
+        modules(sharedModules())
+    }
+}

@@ -23,7 +23,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MusicPlayerViewModel() : KMMViewModel(), KoinComponent {
+class MusicPlayerViewModel : KoinComponent, KMMViewModel() {
 
     private val playlistSongsController: PlaylistSongsController by inject()
     private val mediaPlayerController: MediaPlayerController by inject()
