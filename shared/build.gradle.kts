@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.skie)
+    alias(libs.plugins.googleDevtoolsKsp)
+    alias(libs.plugins.kmpNativeCoroutines)
 }
 
 kotlin {
@@ -33,6 +35,7 @@ kotlin {
     sourceSets {
         all {
             languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
         }
         sourceSets["commonMain"].dependencies {
             api(libs.koin.core)
@@ -54,5 +57,14 @@ android {
     compileSdk = 34
     defaultConfig {
         minSdk = 24
+    }
+}
+
+skie {
+    features {
+        group {
+            co.touchlab.skie.configuration.FlowInterop.Enabled(false)
+            co.touchlab.skie.configuration.SuspendInterop.Enabled(false)
+        }
     }
 }

@@ -11,7 +11,10 @@ import com.ratulsarna.shared.vm.MusicPlayerPartialStateChange.*
 import com.ratulsarna.shared.vm.MusicPlayerSideEffect.*
 import com.ratulsarna.shared.vm.model.toPlaylistViewSong
 import com.rickclephas.kmm.viewmodel.KMMViewModel
+import com.rickclephas.kmm.viewmodel.MutableStateFlow
 import com.rickclephas.kmm.viewmodel.coroutineScope
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -22,7 +25,7 @@ import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("INLINE_FROM_HIGHER_PLATFORM")
 class MusicPlayerViewModel : KoinComponent, KMMViewModel() {
 
     private val playlistSongsController: PlaylistSongsController by inject()
@@ -30,31 +33,16 @@ class MusicPlayerViewModel : KoinComponent, KMMViewModel() {
     private val coroutineContextProvider: CoroutineContextProvider by inject()
 
     private var oneSecondIntervalJob: Job? = null
-    private val _intentFlow = MutableSharedFlow<MusicPlayerIntent>()
     private val sideEffectChannel = Channel<MusicPlayerSideEffect>(Channel.BUFFERED)
 
-    val viewState: StateFlow<MusicPlayerViewState>
+    private val _viewState = MutableStateFlow(viewModelScope, MusicPlayerViewState.INITIAL)
+
+    @NativeCoroutinesState
+    val viewState: StateFlow<MusicPlayerViewState> = _viewState.asStateFlow()
+    @NativeCoroutines
     val sideEffects: Flow<MusicPlayerSideEffect> = sideEffectChannel.receiveAsFlow()
 
     init {
-        val initialVS = MusicPlayerViewState.INITIAL
-        viewState = _intentFlow
-            //.onEach { Timber.d("Event = $it") }
-            .intentToPartialStateChange()
-            //.onEach { Timber.d("Result = $it") }
-            .partialStateChangeToSideEffect()
-            .partialChangeToViewState()
-            //.onEach { Timber.d("ViewState = $it") }
-            .catch {
-                it.printStackTrace()
-              //  Timber.e(it, "Something has gone horribly wrong")
-            }
-            .stateIn(
-                viewModelScope.coroutineScope,
-                SharingStarted.Eagerly,
-                initialVS
-            )
-
         mediaPlayerController.init(
             startedListener = {
                 oneSecondIntervalJob = interval(1000).map {
@@ -79,102 +67,31 @@ class MusicPlayerViewModel : KoinComponent, KMMViewModel() {
         super.onCleared()
     }
 
-    suspend fun processInput(intent: MusicPlayerIntent) {
-        _intentFlow.emit(intent)
-    }
-
-    private fun Flow<MusicPlayerIntent>.intentToPartialStateChange(): Flow<MusicPlayerPartialStateChange> {
-        return merge(
-            onUiCreate(filterIsInstance()),
-            onUiStart(filterIsInstance()),
-            onUiStop(filterIsInstance()),
-            onPlay(filterIsInstance()),
-            onPause(filterIsInstance()),
-            onNextSong(filterIsInstance()),
-            onPreviousSong(filterIsInstance()),
-            onSeekForward(filterIsInstance()),
-            onSeekBackward(filterIsInstance()),
-            onSeekTo(filterIsInstance()),
-            onCurrentPosition(filterIsInstance()),
-            onNewSong(filterIsInstance()),
-        )
-    }
-
-    private fun Flow<MusicPlayerPartialStateChange>.partialChangeToViewState(): Flow<MusicPlayerViewState> {
-        return scan(MusicPlayerViewState.INITIAL) { vs, result ->
-            when (result) {
-                is UiCreatePartialStateChange -> vs.copy(playlist = result.playlist.toImmutableList())
-                is UiStartPartialStateChange -> result.song?.let { song ->
-                    vs.copy(
-                        loading = false,
-                        songTitle = song.title,
-                        songInfoLabel = "${song.artistName} | ${song.year}",
-                        albumArt = song.albumArtResource,
-                        totalDuration = result.duration,
-                        playing = result.playing ?: vs.playing,
-                        currentPlaylistSong = song.toPlaylistViewSong(),
-                        elapsedTimeLabel = vs.elapsedTime.getTimeLabel(),
-                        totalTimeLabel = result.duration.getTimeLabel(),
-                    )
-                } ?: vs
-                is NewSongPartialStateChange -> {
-                    result.song?.let { song ->
-                        val duration = if (result.duration == -1L) vs.totalDuration else result.duration
-                        vs.copy(
-                            loading = false,
-                            songTitle = song.title,
-                            songInfoLabel = "${song.artistName} | ${song.year}",
-                            albumArt = song.albumArtResource,
-                            elapsedTime = 0,
-                            totalDuration = (if (result.duration == -1L) vs.totalDuration else result.duration),
-                            playing = result.playing,
-                            currentPlaylistSong = song.toPlaylistViewSong(),
-                            elapsedTimeLabel = 0L.getTimeLabel(),
-                            totalTimeLabel = duration.getTimeLabel(),
-                        )
-                    } ?: vs
-                }
-                is SeekToPartialStateChange -> {
-                    vs.copy(
-                        elapsedTime = result.position,
-                        elapsedTimeLabel = result.position.getTimeLabel()
-                    )
-                }
-                UiStopPartialStateChange -> vs
-                is PausePartialStateChange -> vs.copy(playing = result.playing)
-                is PlayPartialStateChange -> vs.copy(playing = result.playing)
-                is SongTickerPartialStateChange -> vs.copy(
-                    elapsedTime = result.position,
-                    elapsedTimeLabel = result.position.getTimeLabel()
-                )
-            }
+    fun processInput(intent: MusicPlayerIntent) {
+        println("Event = $intent")
+        when (intent) {
+            UiStartIntent -> handleUiStartIntent()
+            UiStopIntent -> handleUiStopIntent()
+            PlayIntent -> handlePlayIntent()
+            PauseIntent -> handlePauseIntent()
+            NextSongIntent -> handleNextSongIntent()
+            PreviousSongIntent -> handlePreviousSongIntent()
+            SeekForwardIntent -> handleSeekForwardIntent()
+            SeekBackwardIntent -> handleSeekBackwardIntent()
+            is SeekToIntent -> handleSeekToIntent(intent)
+            is NewSongIntent -> handleNewSongIntent(intent)
+            is SongTickerIntent -> handleSongTickerIntent(intent)
         }
     }
 
-    private fun Flow<MusicPlayerPartialStateChange>.partialStateChangeToSideEffect(): Flow<MusicPlayerPartialStateChange> {
-        return onEach { result ->
-            val effect = when {
-                (result is UiStartPartialStateChange && result.errorLoadingSong) ||
-                        (result is NewSongPartialStateChange && result.errorLoading) -> {
-                    ShowErrorSideEffect("Error loading song. Try next song.")
-                }
-                else -> null
-            }
-//            Timber.d("SideEffect = $effect")
-            effect?.let { sideEffectChannel.send(it) }
-        }
-    }
+    private fun handleUiStartIntent() {
+        viewModelScope.coroutineScope.launch {
+            println("inside UiStartIntent")
+            val playlist = playlistSongsController
+                .loadDefaultPlaylistSongs()
+                .map { it.toPlaylistViewSong() }
+                .toImmutableList()
 
-    private fun onUiCreate(flow: Flow<UiCreateIntent>): Flow<UiCreatePartialStateChange> =
-        flow.map {
-            UiCreatePartialStateChange(
-                playlistSongsController.loadDefaultPlaylistSongs()
-                    .map { it.toPlaylistViewSong() }
-            )
-        }
-
-    private fun onUiStart(flow: Flow<UiStartIntent>): Flow<UiStartPartialStateChange> =
-        flow.transformLatest {
             // emit a loading state if new song load takes time
             val loadSuccess = withContext(coroutineContextProvider.io) {
                 mediaPlayerController.loadNewSong(playlistSongsController.currentSong()?.songFileName)
@@ -185,102 +102,140 @@ class MusicPlayerViewModel : KoinComponent, KMMViewModel() {
             var playing = false
             if (loadSuccess) {
                 when {
-                    currentViewState.playing && currentViewState.elapsedTime > 0 -> {
-                        playing = mediaPlayerController.seekToAndStart(currentViewState.elapsedTime.toInt())
-                    }
-
-                    currentViewState.elapsedTime > 0 -> {
+                    currentViewState.playing && currentViewState.elapsedTime > 0 ->
+                        playing =
+                            mediaPlayerController.seekToAndStart(currentViewState.elapsedTime.toInt())
+                    currentViewState.elapsedTime > 0 ->
                         mediaPlayerController.seekTo(currentViewState.elapsedTime.toInt())
-                    }
-
-                    currentViewState.playing -> {
+                    currentViewState.playing ->
                         playing = mediaPlayerController.start()
-                    }
                 }
             }
-            emit(
-                UiStartPartialStateChange(
-                    playlistSongsController.currentSong(),
-                    duration.toLong(),
-                    playing = playing,
-                    errorLoadingSong = !loadSuccess,
-                )
-            )
+            val song = playlistSongsController.currentSong()
+            _viewState.update { vs ->
+                song?.let {
+                    vs.copy(
+                        playlist = playlist,
+                        loading = false,
+                        songTitle = song.title,
+                        songInfoLabel = "${song.artistName} | ${song.year}",
+                        albumArt = song.albumArtResource,
+                        totalDuration = duration.toLong(),
+                        playing = playing,
+                        currentPlaylistSong = song.toPlaylistViewSong(),
+                        elapsedTimeLabel = vs.elapsedTime.getTimeLabel(),
+                        totalTimeLabel = duration.toLong().getTimeLabel(),
+                    )
+                } ?: vs
+            }
+            if (!loadSuccess) {
+                sideEffectChannel.send(ShowErrorSideEffect("Error loading song. Try next song."))
+            }
         }
+    }
 
-    private fun onUiStop(flow: Flow<UiStopIntent>): Flow<UiStopPartialStateChange> =
-        flow.map {
+    private fun handleUiStopIntent() {
+        viewModelScope.coroutineScope.launch {
             // Important note: We are pausing here (if player is playing) to stop playback
             // immediately but this pause is not propagated to the Ui because we want to
             // continue playback on the next UiStartEvent
             mediaPlayerController.pause()
             mediaPlayerController.release()
-            UiStopPartialStateChange
         }
+    }
 
-    private fun onPlay(flow: Flow<PlayIntent>): Flow<PlayPartialStateChange> =
-        flow.map {
-            PlayPartialStateChange(mediaPlayerController.start())
+    private fun handlePlayIntent() {
+        val playing = mediaPlayerController.start()
+        _viewState.update { vs ->
+            vs.copy(playing = playing)
         }
+    }
 
-    private fun onPause(flow: Flow<PauseIntent>): Flow<PausePartialStateChange> =
-        flow.map {
-            PausePartialStateChange(mediaPlayerController.pause().not())
+    private fun handlePauseIntent() {
+        val playing = mediaPlayerController.pause().not()
+        _viewState.update { vs ->
+            vs.copy(playing = playing)
         }
+    }
 
-    private fun onNextSong(flow: Flow<NextSongIntent>): Flow<NewSongPartialStateChange> =
-        flow.map {
-            playlistSongsController.nextSong()
-        }.newSongResultFromSong()
+    private fun handleNextSongIntent() {
+        val nextSong = playlistSongsController.nextSong()
+        processNewSong(nextSong)
+    }
 
-    private fun onPreviousSong(flow: Flow<PreviousSongIntent>): Flow<NewSongPartialStateChange> =
-        flow.map {
-            playlistSongsController.previousSong()
-        }.newSongResultFromSong()
+    private fun handlePreviousSongIntent() {
+        val previousSong = playlistSongsController.previousSong()
+        processNewSong(previousSong)
+    }
 
-    private fun onSeekForward(flow: Flow<SeekForwardIntent>): Flow<SeekToPartialStateChange> =
-        flow.map {
-            SeekToPartialStateChange(
-                mediaPlayerController.seekBy(SEEK_DURATION).toLong()
+    private fun handleSeekForwardIntent() {
+        val position = mediaPlayerController.seekBy(SEEK_DURATION).toLong()
+        _viewState.update { vs ->
+            vs.copy(
+                elapsedTime = position,
+                elapsedTimeLabel = position.getTimeLabel()
             )
         }
+    }
 
-    private fun onSeekBackward(flow: Flow<SeekBackwardIntent>): Flow<SeekToPartialStateChange> =
-        flow.map {
-            SeekToPartialStateChange(
-                mediaPlayerController.seekBy(-SEEK_DURATION).toLong()
+    private fun handleSeekBackwardIntent() {
+        val position = mediaPlayerController.seekBy(-SEEK_DURATION).toLong()
+        _viewState.update { vs ->
+            vs.copy(
+                elapsedTime = position,
+                elapsedTimeLabel = position.getTimeLabel()
             )
         }
+    }
 
-    private fun onSeekTo(flow: Flow<SeekToIntent>): Flow<SeekToPartialStateChange> =
-        flow.map {
-            SeekToPartialStateChange(
-                mediaPlayerController.seekTo(it.position.toInt()).toLong()
+    private fun handleSeekToIntent(intent: SeekToIntent) {
+        val position = mediaPlayerController.seekTo(intent.position.toInt()).toLong()
+        _viewState.update { vs ->
+            vs.copy(
+                elapsedTime = position,
+                elapsedTimeLabel = position.getTimeLabel()
             )
         }
+    }
 
-    private fun onCurrentPosition(flow: Flow<SongTickerIntent>): Flow<SongTickerPartialStateChange> =
-        flow.map { SongTickerPartialStateChange(it.position) }
+    private fun handleNewSongIntent(intent: NewSongIntent) {
+        val newSong = if (intent.songId != viewState.value.currentPlaylistSong?.id) {
+            playlistSongsController.newSong(intent .songId)
+        } else {
+            null
+        }
+        processNewSong(newSong)
+    }
 
-    private fun onNewSong(flow: Flow<NewSongIntent>): Flow<NewSongPartialStateChange> =
-        flow.mapNotNull {
-            if (it.songId != viewState.value.currentPlaylistSong?.id) {
-                playlistSongsController.newSong(it.songId)
-            } else {
-                null
-            }
-        }.newSongResultFromSong()
+    private fun handleSongTickerIntent(intent: SongTickerIntent) {
+        _viewState.update { vs ->
+            vs.copy(
+                elapsedTime = intent.position,
+                elapsedTimeLabel = intent.position.getTimeLabel()
+            )
+        }
+    }
 
-    private fun Flow<Song?>.newSongResultFromSong(): Flow<NewSongPartialStateChange> =
-        transformLatest { song ->
-            emit(
-                NewSongPartialStateChange(
-                    song,
-                    -1,
+    private fun processNewSong(song: Song?) {
+        // initial update while song is loaded
+        _viewState.update { vs ->
+            song?.let {
+                val duration = vs.totalDuration
+                vs.copy(
+                    loading = false,
+                    songTitle = song.title,
+                    songInfoLabel = "${song.artistName} | ${song.year}",
+                    albumArt = song.albumArtResource,
+                    elapsedTime = 0,
+                    totalDuration = duration,
                     playing = false,
-                    errorLoading = false,
+                    currentPlaylistSong = song.toPlaylistViewSong(),
+                    elapsedTimeLabel = 0L.getTimeLabel(),
+                    totalTimeLabel = duration.getTimeLabel(),
                 )
-            )
+            } ?: vs
+        }
+        viewModelScope.coroutineScope.launch {
             val loadSuccess = withContext(coroutineContextProvider.io) {
                 val loadSuccess = mediaPlayerController.loadNewSong(song?.songFileName)
                 if (!loadSuccess) mediaPlayerController.release()
@@ -291,15 +246,27 @@ class MusicPlayerViewModel : KoinComponent, KMMViewModel() {
             } else {
                 MINIMUM_DURATION to false
             }
-            emit(
-                NewSongPartialStateChange(
-                    song = song,
-                    duration = duration.toLong(),
-                    playing = playing,
-                    errorLoading = !loadSuccess
-                )
-            )
+            _viewState.update { vs ->
+                song?.let {
+                    vs.copy(
+                        loading = false,
+                        songTitle = song.title,
+                        songInfoLabel = "${song.artistName} | ${song.year}",
+                        albumArt = song.albumArtResource,
+                        elapsedTime = 0,
+                        totalDuration = duration.toLong(),
+                        playing = playing,
+                        currentPlaylistSong = song.toPlaylistViewSong(),
+                        elapsedTimeLabel = 0L.getTimeLabel(),
+                        totalTimeLabel = duration.toLong().getTimeLabel(),
+                    )
+                } ?: vs
+            }
+            if (!loadSuccess) {
+                sideEffectChannel.send(ShowErrorSideEffect("Error loading song. Try next song."))
+            }
         }
+    }
 
     private fun Long.getTimeLabel(): String {
         val minutes = this / (1000 * 60)

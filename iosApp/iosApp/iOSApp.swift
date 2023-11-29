@@ -9,7 +9,7 @@ import SwiftUI
 import shared
 
 @main
-struct iosAppApp: App {
+struct iOSApp: App {
     
     init() {
         KoinModuleKt.doInitKoin()
@@ -17,7 +17,7 @@ struct iosAppApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MusicPlayerContentView()
         }
     }
 }

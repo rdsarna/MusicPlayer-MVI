@@ -37,7 +37,6 @@ data class MusicPlayerViewState(
 }
 
 sealed class MusicPlayerIntent {
-    object UiCreateIntent : MusicPlayerIntent()
     object UiStartIntent : MusicPlayerIntent()
     object UiStopIntent : MusicPlayerIntent()
     object PlayIntent : MusicPlayerIntent()

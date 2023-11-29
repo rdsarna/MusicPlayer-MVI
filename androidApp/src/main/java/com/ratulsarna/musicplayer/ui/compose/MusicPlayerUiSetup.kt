@@ -84,9 +84,6 @@ fun LifecycleEvents(
         // for sending analytics events
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_CREATE -> {
-                    eventChannel.trySend(MusicPlayerIntent.UiCreateIntent)
-                }
                 Lifecycle.Event.ON_START -> {
                     eventChannel.trySend(MusicPlayerIntent.UiStartIntent)
                 }

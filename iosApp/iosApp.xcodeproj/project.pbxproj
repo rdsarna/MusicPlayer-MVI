@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		461F010B2B10B3E400DB164A /* iosAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 461F010A2B10B3E400DB164A /* iosAppApp.swift */; };
-		461F010D2B10B3E400DB164A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 461F010C2B10B3E400DB164A /* ContentView.swift */; };
+		461F010B2B10B3E400DB164A /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 461F010A2B10B3E400DB164A /* iOSApp.swift */; };
+		461F010D2B10B3E400DB164A /* MusicPlayerContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 461F010C2B10B3E400DB164A /* MusicPlayerContentView.swift */; };
 		461F010F2B10B3E500DB164A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 461F010E2B10B3E500DB164A /* Assets.xcassets */; };
 		461F01122B10B3E500DB164A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 461F01112B10B3E500DB164A /* Preview Assets.xcassets */; };
 		46D63B8E2B15355D00A73BD5 /* KMMViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46D63B8D2B15355D00A73BD5 /* KMMViewModel.swift */; };
@@ -18,8 +18,8 @@
 /* Begin PBXFileReference section */
 		0277A57A194374E339721815 /* Pods-iosApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.release.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.release.xcconfig"; sourceTree = "<group>"; };
 		461F01072B10B3E400DB164A /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		461F010A2B10B3E400DB164A /* iosAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosAppApp.swift; sourceTree = "<group>"; };
-		461F010C2B10B3E400DB164A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		461F010A2B10B3E400DB164A /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
+		461F010C2B10B3E400DB164A /* MusicPlayerContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicPlayerContentView.swift; sourceTree = "<group>"; };
 		461F010E2B10B3E500DB164A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		461F01112B10B3E500DB164A /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		46D63B8D2B15355D00A73BD5 /* KMMViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KMMViewModel.swift; sourceTree = "<group>"; };
@@ -69,8 +69,8 @@
 		461F01092B10B3E400DB164A /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
-				461F010A2B10B3E400DB164A /* iosAppApp.swift */,
-				461F010C2B10B3E400DB164A /* ContentView.swift */,
+				461F010A2B10B3E400DB164A /* iOSApp.swift */,
+				461F010C2B10B3E400DB164A /* MusicPlayerContentView.swift */,
 				461F010E2B10B3E500DB164A /* Assets.xcassets */,
 				461F01102B10B3E500DB164A /* Preview Content */,
 				46D63B8D2B15355D00A73BD5 /* KMMViewModel.swift */,
@@ -227,8 +227,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				46D63B8E2B15355D00A73BD5 /* KMMViewModel.swift in Sources */,
-				461F010D2B10B3E400DB164A /* ContentView.swift in Sources */,
-				461F010B2B10B3E400DB164A /* iosAppApp.swift in Sources */,
+				461F010D2B10B3E400DB164A /* MusicPlayerContentView.swift in Sources */,
+				461F010B2B10B3E400DB164A /* iOSApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

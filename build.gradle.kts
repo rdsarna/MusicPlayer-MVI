@@ -6,4 +6,6 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform).apply(false)
     alias(libs.plugins.kotlinCocoapods).apply(false)
     alias(libs.plugins.kotlinKapt).apply(false)
+    alias(libs.plugins.googleDevtoolsKsp).apply(false)
+    alias(libs.plugins.kmpNativeCoroutines).apply(false)
 }
